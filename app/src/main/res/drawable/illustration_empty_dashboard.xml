@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="150dp"
+    android:height="150dp"
+    android:viewportWidth="150"
+    android:viewportHeight="150">
+    <!-- Soft background blob -->
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M75,15 C115,15 135,40 135,75 C135,110 110,135 75,135 C35,135 15,110 15,75 C15,35 35,15 75,15 Z" />
+    <!-- Stylized minimalist resting flower / plant -->
+    <!-- Stem -->
+    <path
+        android:strokeColor="#5A6B52"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M75,110 L75,60" />
+    <!-- Leaf 1 -->
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M75,90 C90,90 95,80 95,75 C85,75 75,85 75,90 Z" />
+    <!-- Leaf 2 -->
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M75,75 C60,75 55,65 55,60 C65,60 75,70 75,75 Z" />
+    <!-- Flower bud at top using standard vector paths -->
+    <path
+        android:fillColor="#5A6B52"
+        android:pathData="M 65,55 a 10,10 0 1,0 20,0 a 10,10 0 1,0 -20,0" />
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M 70,55 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0" />
+    <!-- Soft wind waves indicating calmness -->
+    <path
+        android:strokeColor="#A99C8D"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M30,110 C45,115 55,105 70,110" />
+    <path
+        android:strokeColor="#A99C8D"
+        android:strokeWidth="2"
+        android:strokeLineCap="round"
+        android:pathData="M80,110 C95,115 105,105 120,110" />
+</vector>

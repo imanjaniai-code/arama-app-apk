@@ -2,7 +2,9 @@ package com.example.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -13,6 +15,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+
+val AramaShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(20.dp),
+    large = RoundedCornerShape(28.dp),
+    extraLarge = RoundedCornerShape(36.dp)
+)
 
 private val DarkColorScheme =
   darkColorScheme(
@@ -65,6 +76,6 @@ fun MyApplicationTheme(
 
   // Force LayoutDirection.Rtl globally for Persian UI support
   CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
-    MaterialTheme(colorScheme = colorScheme, typography = typography, content = content)
+    MaterialTheme(colorScheme = colorScheme, typography = typography, shapes = AramaShapes, content = content)
   }
 }

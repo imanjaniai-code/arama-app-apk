@@ -32,15 +32,6 @@ val EarthyWarning = Color(0xFFC4A484)  // Soft ochre/warm warning
 val EarthyError = Color(0xFFB87D7A)    // Soft terracotta error red
 val EarthyRedBg = Color(0xFFF7ECEB)    // Very soft desaturated red bg for errors/crisis
 
-// --- Backward Compatibility Aliases & Helpers ---
-// This guarantees we don't break existing layouts and automatically upgrades them to the new palette.
-val EmeraldPrimary = SagePrimary
-val EmeraldDark = SageDeep
-val EmeraldMedium = SagePrimary
-val EmeraldLightBg = MainLightBg
-val MintGreen = SageTintBg
-val SageGreen = SagePrimary
-
 // Neutral / Structural Colors
 val WarmWhite = Color(0xFFFBF9F5)
 val Charcoal = Color(0xFF2B2D29)       // Deep earthy charcoal instead of cold blue-gray

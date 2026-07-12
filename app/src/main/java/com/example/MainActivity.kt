@@ -10,6 +10,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.ui.screens.BiometricUnlockScreen
 import com.example.ui.screens.LoginScreen
 import com.example.ui.screens.MainShellScreen
 import com.example.ui.screens.MainViewModel
@@ -24,13 +25,20 @@ class MainActivity : ComponentActivity() {
       val mainViewModel: MainViewModel = viewModel()
       val currentRoute by mainViewModel.currentRoute.collectAsState()
       val isDarkTheme by mainViewModel.isDarkTheme.collectAsState()
+      val isBiometricUnlocked by mainViewModel.isBiometricUnlocked.collectAsState()
 
       MyApplicationTheme(darkTheme = isDarkTheme) {
         Box(modifier = Modifier.fillMaxSize()) {
           when (currentRoute) {
             "onboarding" -> OnboardingScreen(mainViewModel)
             "login" -> LoginScreen(mainViewModel)
-            else -> MainShellScreen(mainViewModel)
+            else -> {
+              if (isBiometricUnlocked) {
+                MainShellScreen(mainViewModel)
+              } else {
+                BiometricUnlockScreen(mainViewModel)
+              }
+            }
           }
         }
       }

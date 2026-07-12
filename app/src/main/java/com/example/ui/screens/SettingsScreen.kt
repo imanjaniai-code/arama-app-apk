@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -54,9 +55,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.CrisisRed
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 
 @Composable
 fun SettingsScreen(
@@ -67,6 +68,21 @@ fun SettingsScreen(
     val email by viewModel.userEmail.collectAsState()
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
+    var reportCategory by remember { mutableStateOf("نیاز به کمک فوری (بحران استرس شدید)") }
+    var reportContent by remember { mutableStateOf("") }
+    var showReportSuccessDialog by remember { mutableStateOf(false) }
+    var isSubmittingReport by remember { mutableStateOf(false) }
+
+    // State variables for Subscription & Security UI Features
+    var discountCodeText by remember { mutableStateOf("") }
+    var discountMessage by remember { mutableStateOf<String?>(null) }
+    var showPaymentDialog by remember { mutableStateOf(false) }
+    var selectedUpgradePlan by remember { mutableStateOf("PREMIUM") }
+
+    // State variables for Local Backups & Disasters Recovery UI
+    var backupString by remember { mutableStateOf("") }
+    var showBackupSuccess by remember { mutableStateOf<String?>(null) }
+    var importStringInput by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -82,7 +98,7 @@ fun SettingsScreen(
             Icon(
                 imageVector = Icons.Default.Settings,
                 contentDescription = "تنظیمات",
-                tint = EmeraldPrimary,
+                tint = SagePrimary,
                 modifier = Modifier.size(48.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -90,7 +106,7 @@ fun SettingsScreen(
                 text = "تنظیمات برنامه",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.Bold,
-                    color = EmeraldDark
+                    color = SageDeep
                 ),
                 textAlign = TextAlign.Center
             )
@@ -117,7 +133,7 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Person,
                         contentDescription = "کاربر",
-                        tint = EmeraldPrimary,
+                        tint = SagePrimary,
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.width(16.dp))
@@ -132,22 +148,22 @@ fun SettingsScreen(
                                     .fillMaxWidth()
                                     .testTag("edit_name_input"),
                                 colors = OutlinedTextFieldDefaults.colors(
-                                    focusedBorderColor = EmeraldPrimary,
-                                    focusedLabelColor = EmeraldPrimary
+                                    focusedBorderColor = SagePrimary,
+                                    focusedLabelColor = SagePrimary
                                 )
                             )
                         } else {
                             Text(
                                 text = if (userName.isNotEmpty()) userName else "نام ثبت نشده",
                                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Spacer(modifier = Modifier.height(2.dp))
                             Text(
                                 text = email,
                                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
@@ -183,7 +199,7 @@ fun SettingsScreen(
                                     isEditingName = false
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
                         ) {
                             Text("ذخیره تغییرات", color = Color.White)
                         }
@@ -194,7 +210,7 @@ fun SettingsScreen(
                                 isEditingName = true
                             }
                         ) {
-                            Text("ویرایش نام من", color = EmeraldPrimary, fontWeight = FontWeight.Bold)
+                            Text("ویرایش نام من", color = SagePrimary, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -215,10 +231,10 @@ fun SettingsScreen(
                     text = "ظاهر برنامه",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -231,7 +247,7 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.Default.ColorLens,
                             contentDescription = "تم",
-                            tint = EmeraldPrimary,
+                            tint = SagePrimary,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -245,7 +261,7 @@ fun SettingsScreen(
                         onCheckedChange = { viewModel.setDarkTheme(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = EmeraldPrimary
+                            checkedTrackColor = SagePrimary
                         ),
                         modifier = Modifier.testTag("dark_mode_switch")
                     )
@@ -271,7 +287,7 @@ fun SettingsScreen(
                     Icon(
                         imageVector = Icons.Default.Spa,
                         contentDescription = "هوش مصنوعی",
-                        tint = EmeraldPrimary,
+                        tint = SagePrimary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -279,10 +295,10 @@ fun SettingsScreen(
                         text = "تنظیمات هوش مصنوعی آراما",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldDark
+                            color = SageDeep
                         ),
                         modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Right
+                        textAlign = TextAlign.Start
                     )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
@@ -290,7 +306,7 @@ fun SettingsScreen(
                     text = "مدل جمینای مورد استفاده برای پاسخ‌دهی را انتخاب کنید:",
                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -298,38 +314,39 @@ fun SettingsScreen(
                 Card(
                     onClick = { viewModel.setGeminiModelMode("fast") },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "fast") EmeraldPrimary.copy(alpha = 0.12f) else Color.Transparent
+                        containerColor = if (currentModelMode == "fast") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
                     ),
                     border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (currentModelMode == "fast") EmeraldPrimary else MaterialTheme.colorScheme.outlineVariant
+                        if (currentModelMode == "fast") 2.dp else 1.dp,
+                        if (currentModelMode == "fast") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "سرعت فوق‌العاده (Lite)",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "پاسخ‌دهی آنی با مدل gemini-3.1-flash-lite",
                                 style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         androidx.compose.material3.RadioButton(
                             selected = currentModelMode == "fast",
                             onClick = { viewModel.setGeminiModelMode("fast") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = EmeraldPrimary)
+                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
                         )
                     }
                 }
@@ -340,38 +357,39 @@ fun SettingsScreen(
                 Card(
                     onClick = { viewModel.setGeminiModelMode("general") },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "general") EmeraldPrimary.copy(alpha = 0.12f) else Color.Transparent
+                        containerColor = if (currentModelMode == "general") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
                     ),
                     border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (currentModelMode == "general") EmeraldPrimary else MaterialTheme.colorScheme.outlineVariant
+                        if (currentModelMode == "general") 2.dp else 1.dp,
+                        if (currentModelMode == "general") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "عادی و متعادل (Standard)",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "گفتگوی متعادل و روان با مدل gemini-3.5-flash",
                                 style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         androidx.compose.material3.RadioButton(
                             selected = currentModelMode == "general",
                             onClick = { viewModel.setGeminiModelMode("general") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = EmeraldPrimary)
+                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
                         )
                     }
                 }
@@ -382,38 +400,39 @@ fun SettingsScreen(
                 Card(
                     onClick = { viewModel.setGeminiModelMode("complex") },
                     colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "complex") EmeraldPrimary.copy(alpha = 0.12f) else Color.Transparent
+                        containerColor = if (currentModelMode == "complex") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
                     ),
                     border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (currentModelMode == "complex") EmeraldPrimary else MaterialTheme.colorScheme.outlineVariant
+                        if (currentModelMode == "complex") 2.dp else 1.dp,
+                        if (currentModelMode == "complex") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                     ),
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "تفکر عمیق و تحلیلی (High Thinking)",
                                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = "استدلال عمیق با مدل gemini-3.1-pro-preview و تفکر بالا",
                                 style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Right,
+                                textAlign = TextAlign.Start,
                                 modifier = Modifier.fillMaxWidth()
                             )
                         }
-                        Spacer(modifier = Modifier.width(12.dp))
+                        Spacer(modifier = Modifier.width(16.dp))
                         androidx.compose.material3.RadioButton(
                             selected = currentModelMode == "complex",
                             onClick = { viewModel.setGeminiModelMode("complex") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = EmeraldPrimary)
+                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
                         )
                     }
                 }
@@ -434,10 +453,10 @@ fun SettingsScreen(
                     text = "حریم خصوصی با پیش‌فرض محافظه‌کارانه",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -459,7 +478,7 @@ fun SettingsScreen(
                         Icon(
                             imageVector = Icons.Default.Shield,
                             contentDescription = "ذخیره سازی محلی",
-                            tint = EmeraldPrimary,
+                            tint = SagePrimary,
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(modifier = Modifier.width(12.dp))
@@ -479,9 +498,570 @@ fun SettingsScreen(
                         onCheckedChange = { viewModel.setLocalOnlyPrivacy(it) },
                         colors = SwitchDefaults.colors(
                             checkedThumbColor = Color.White,
-                            checkedTrackColor = EmeraldPrimary
+                            checkedTrackColor = SagePrimary
                         ),
                         modifier = Modifier.testTag("privacy_local_switch")
+                    )
+                }
+            }
+        }
+
+        // --- Architecture Upgrade Card: Subscriptions ---
+        val subPlan by viewModel.subscriptionPlan.collectAsState()
+        val subStatus by viewModel.subscriptionStatus.collectAsState()
+        val subExpiry by viewModel.subscriptionExpiry.collectAsState()
+        val chatLimitExceeded by viewModel.chatLimitExceeded.collectAsState()
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().testTag("subscription_card"),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Shield,
+                        contentDescription = "اشتراک",
+                        tint = SagePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "مدیریت اشتراک و طرح کاربری",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = SageDeep
+                        ),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "پلن فعلی شما:", style = MaterialTheme.typography.bodyMedium)
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                if (subPlan == "FREE") Color(0xFFF3F4F6) else SagePrimary.copy(alpha = 0.15f),
+                                shape = RoundedCornerShape(8.dp)
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = when (subPlan) {
+                                "FREE" -> "رایگان (Free)"
+                                "PREMIUM" -> "طلایی (Premium) 🌟"
+                                "CORPORATE" -> "سازمانی (Corporate) 🏢"
+                                else -> subPlan
+                            },
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = if (subPlan == "FREE") Color.DarkGray else SageDeep
+                            )
+                        )
+                    }
+                }
+
+                if (subPlan == "FREE") {
+                    Text(
+                        text = "⚠️ شما در طرح محدود قرار دارید (حداکثر ۵ پیام در روز). برای باز کردن مکالمات نامحدود و مدل‌های تحلیلی، اشتراک خود را ارتقا دهید.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = CrisisRed, lineHeight = 16.sp),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    val expiryDate = java.text.SimpleDateFormat("yyyy/MM/dd HH:mm", java.util.Locale.getDefault()).format(java.util.Date(subExpiry))
+                    Text(
+                        text = "✅ اشتراک شما فعال است. انقضا: $expiryDate",
+                        style = MaterialTheme.typography.bodySmall.copy(color = SageDeep, fontWeight = FontWeight.Bold),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+
+                if (subPlan == "FREE") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        androidx.compose.material3.OutlinedTextField(
+                            value = discountCodeText,
+                            onValueChange = { discountCodeText = it },
+                            placeholder = { Text("کد تخفیف (مثال: FREEPREM)") },
+                            singleLine = true,
+                            modifier = Modifier.weight(1f).height(54.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(10.dp)
+                        )
+                        Button(
+                            onClick = {
+                                val discount = viewModel.applyDiscountCode(discountCodeText)
+                                if (discount != null) {
+                                    discountMessage = "کد با موفقیت اعمال شد!"
+                                    if (discount == "FREE") {
+                                        viewModel.upgradeSubscription("PREMIUM", "DISCOUNT-100")
+                                    }
+                                } else {
+                                    discountMessage = "کد تخفیف معتبر نیست!"
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.height(54.dp)
+                        ) {
+                            Text("اعمال")
+                        }
+                    }
+
+                    if (discountMessage != null) {
+                        Text(
+                            text = discountMessage!!,
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = if (discountMessage!!.contains("موفقیت")) SageDeep else CrisisRed,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Button(
+                        onClick = {
+                            selectedUpgradePlan = "PREMIUM"
+                            showPaymentDialog = true
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                    ) {
+                        Text("ارتقای اشتراک به پلن طلایی (🌟 ۴۹,۰۰۰ تومان)")
+                    }
+                }
+            }
+        }
+
+        // --- Security, RBAC & Monitoring Card ---
+        val userRole by viewModel.userRole.collectAsState()
+        val isConsentGiven by viewModel.isConsentGiven.collectAsState()
+        val isBiometricEnabled by viewModel.isBiometricEnabled.collectAsState()
+        val securityLogs by viewModel.allSecurityLogs.collectAsState()
+        val queryPerformanceMs by viewModel.queryPerformanceMs.collectAsState()
+        val dbSizeOnDisk by viewModel.databaseSizeOnDisk.collectAsState()
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().testTag("security_monitoring_card"),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Security,
+                        contentDescription = "امنیت و مانیتورینگ",
+                        tint = SagePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "امنیت پیشرفته و پایش سیستم",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = SageDeep
+                        ),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start
+                    )
+                }
+
+                // Monitoring Panel
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFFF9FAFB), shape = RoundedCornerShape(12.dp))
+                        .padding(12.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Text(
+                            text = "📊 داشبورد سلامت سیستم و مانیتورینگ داده:",
+                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "زمان پاسخ کوئری محلی دیتابیس:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(text = "$queryPerformanceMs میلی‌ثانیه", style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = SageDeep)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "حجم فیزیکی پایگاه داده روی دیسک:", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(text = dbSizeOnDisk, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold), color = SageDeep)
+                        }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(text = "سطح دسترسی شما (RBAC):", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+                            Text(
+                                text = when (userRole) {
+                                    "admin" -> "مدیر سیستم (Admin)"
+                                    "support" -> "کارشناس پشتیبانی (Support)"
+                                    else -> "کاربر عادی (Regular User)"
+                                },
+                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                                color = SagePrimary
+                            )
+                        }
+                    }
+                }
+
+                // Consent toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "موافقت با ثبت گزارش‌های امنیتی",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = "برای مانیتورینگ امنیتی محلی.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Switch(
+                        checked = isConsentGiven,
+                        onCheckedChange = { viewModel.setConsentGiven(it) },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = SagePrimary)
+                    )
+                }
+
+                // Biometrics toggle
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "قفل امنیتی اثر انگشت / زیست‌سنجی",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Text(
+                            text = "درخواست تایید هویت در هنگام شروع برنامه.",
+                            style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                            textAlign = TextAlign.Start,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    Switch(
+                        checked = isBiometricEnabled,
+                        onCheckedChange = { viewModel.setBiometricEnabled(it) },
+                        colors = SwitchDefaults.colors(checkedThumbColor = Color.White, checkedTrackColor = SagePrimary)
+                    )
+                }
+
+                // Log display list
+                Text(
+                    text = "🛡️ گزارش رخدادهای امنیتی (Audit Trails):",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                if (securityLogs.isEmpty()) {
+                    Text(
+                        text = "هیچ رخدادی ثبت نشده است.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(130.dp)
+                            .background(Color(0xFFF3F4F6), shape = RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        securityLogs.take(25).forEach { log ->
+                            val timeStr = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(log.timestamp))
+                            Text(
+                                text = "[$timeStr] ${log.eventType}: ${log.details}",
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.sp),
+                                color = if (log.eventType.contains("FAILURE") || log.eventType.contains("LIMIT")) CrisisRed else Color.Black,
+                                textAlign = TextAlign.Start,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Backup and Disaster Recovery Card ---
+
+        Card(
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().testTag("backup_recovery_card"),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CloudOff,
+                        contentDescription = "پشتیبان‌گیری",
+                        tint = SagePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "پشتیبان‌گیری محلی و بازیابی داده‌ها (Disaster Recovery)",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = SageDeep
+                        ),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start
+                    )
+                }
+
+                Text(
+                    text = "از آنجا که اطلاعات شما به صورت ابری ذخیره نمی‌شود، می‌توانید یک نسخه پشتیبان متنی ایجاد کرده و ذخیره نمایید تا بعدا مجدد بازیابی کنید.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            backupString = viewModel.exportBackup()
+                            showBackupSuccess = "کد پشتیبان با موفقیت ساخته شد!"
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                        shape = RoundedCornerShape(10.dp),
+                        modifier = Modifier.weight(1f).height(44.dp)
+                    ) {
+                        Text("ساخت فایل پشتیبان (Export)")
+                    }
+                }
+
+                if (backupString.isNotEmpty()) {
+                    androidx.compose.material3.OutlinedTextField(
+                        value = backupString,
+                        onValueChange = {},
+                        readOnly = true,
+                        modifier = Modifier.fillMaxWidth().height(80.dp),
+                        textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        )
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(4.dp))
+
+                Text(
+                    text = "بازیابی نسخه پشتیبان:",
+                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = importStringInput,
+                    onValueChange = { importStringInput = it },
+                    placeholder = { Text("کد پشتیبان کپی شده را اینجا پیست کنید...") },
+                    modifier = Modifier.fillMaxWidth().height(80.dp),
+                    textStyle = MaterialTheme.typography.bodySmall.copy(fontSize = 10.sp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SagePrimary,
+                        focusedLabelColor = SagePrimary
+                    ),
+                    shape = RoundedCornerShape(10.dp)
+                )
+
+                Button(
+                    onClick = {
+                        val success = viewModel.importBackup(importStringInput)
+                        showBackupSuccess = if (success) "اطلاعات با موفقیت بازیابی شد!" else "کد پشتیبان نامعتبر است!"
+                        if (success) {
+                            importStringInput = ""
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SageDeep),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.fillMaxWidth().height(44.dp)
+                ) {
+                    Text("بازیابی نسخه پشتیبان (Import)")
+                }
+
+                if (showBackupSuccess != null) {
+                    Text(
+                        text = showBackupSuccess!!,
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            color = if (showBackupSuccess!!.contains("موفقیت")) SageDeep else CrisisRed,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+
+        // Support and Report Card
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
+            ),
+            shape = RoundedCornerShape(16.dp),
+            modifier = Modifier.fillMaxWidth().testTag("support_card"),
+            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = "پشتیبانی",
+                        tint = SagePrimary,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "پشتیبانی و گزارش مشکلات داخلاپ",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = SageDeep
+                        ),
+                        modifier = Modifier.weight(1f),
+                        textAlign = TextAlign.Start
+                    )
+                }
+
+                Text(
+                    text = "در صورت داشتن هرگونه مشکل فنی، سوال، انتقاد یا نیاز مبرم به ارتباط مستقیم با پشتیبانی آراما، پیام خود را در زیر ثبت کنید.",
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Category selector buttons
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = "دسته‌بندی گزارش:",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    val categories = listOf(
+                        "نیاز به کمک فوری (بحران استرس شدید)",
+                        "گزارش مشکل فنی در برنامه",
+                        "پیشنهاد یا بازخورد برای بهبود"
+                    )
+                    categories.forEach { cat ->
+                        val isSelected = reportCategory == cat
+                        Card(
+                            onClick = { reportCategory = cat },
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isSelected) SagePrimary.copy(alpha = 0.15f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            border = if (isSelected) androidx.compose.foundation.BorderStroke(1.dp, SagePrimary) else null
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = if (isSelected) "● $cat" else "○ $cat",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = if (isSelected) SageDeep else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+
+                androidx.compose.material3.OutlinedTextField(
+                    value = reportContent,
+                    onValueChange = { reportContent = it },
+                    placeholder = { Text("توضیحات خود را اینجا بنویسید...") },
+                    modifier = Modifier.fillMaxWidth().height(100.dp).testTag("support_input"),
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = SagePrimary,
+                        focusedLabelColor = SagePrimary
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                Button(
+                    onClick = {
+                        if (reportContent.trim().isNotEmpty()) {
+                            isSubmittingReport = true
+                            viewModel.sendSupportReport(reportCategory, reportContent) {
+                                isSubmittingReport = false
+                                showReportSuccessDialog = true
+                                reportContent = ""
+                            }
+                        }
+                    },
+                    enabled = reportContent.trim().isNotEmpty() && !isSubmittingReport,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = SagePrimary,
+                        disabledContainerColor = SagePrimary.copy(alpha = 0.5f)
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth().height(48.dp).testTag("submit_report_button")
+                ) {
+                    Text(
+                        text = if (isSubmittingReport) "در حال ارسال..." else "ارسال گزارش به پشتیبانی",
+                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold, color = Color.White)
                     )
                 }
             }
@@ -505,7 +1085,7 @@ fun SettingsScreen(
                         color = Color(0xFF991B1B)
                     ),
                     modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -552,7 +1132,7 @@ fun SettingsScreen(
             Icon(
                 imageVector = Icons.Default.Spa,
                 contentDescription = "برندینگ",
-                tint = EmeraldPrimary.copy(alpha = 0.5f),
+                tint = SagePrimary.copy(alpha = 0.5f),
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.height(4.dp))
@@ -577,7 +1157,7 @@ fun SettingsScreen(
                 Text(
                     text = "آیا کاملاً مطمئن هستید؟",
                     style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    textAlign = TextAlign.Right,
+                    textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -585,7 +1165,7 @@ fun SettingsScreen(
                 Text(
                     text = "این عمل غیر قابل بازگشت است. تمام پیام‌ها و اطلاعات حال روحی شما برای همیشه پاک خواهند شد و برنامه به حالت اول بازمی‌گردد.",
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Right,
+                    textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
                 )
             },
@@ -609,6 +1189,102 @@ fun SettingsScreen(
             },
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier.testTag("wipe_confirm_dialog")
+        )
+    }
+
+    if (showReportSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { showReportSuccessDialog = false },
+            title = {
+                Text(
+                    text = "گزارش ثبت شد 🌱",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = "پیام شما با موفقیت ثبت شد. در صورت نیاز به پیگیری فوری، کارشناسان مربیگری و سلامت روان آراما از طریق آدرس ایمیل شما ارتباط خواهند گرفت.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { showReportSuccessDialog = false },
+                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
+                ) {
+                    Text("متوجه شدم", color = Color.White)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // --- Simulated ZarinPal Checkout Gateway ---
+    if (showPaymentDialog) {
+        AlertDialog(
+            onDismissRequest = { showPaymentDialog = false },
+            title = {
+                Text(
+                    text = "درگاه پرداخت امن آراما (شبیه‌ساز زرین‌پال)",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "شما در حال ارتقای حساب خود به پلن طلایی (Premium) هستید.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "مبلغ قابل پرداخت: ۴۹,۰۰۰ تومان",
+                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "شماره کارت شبیه‌سازی شده: ۶۰۳۷-۹۹۷۵-۱۲۳۴-۵۶۷۸",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = "سرویس‌دهنده واسط: شرکت پرداخت الکترونیک زرین‌پال",
+                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showPaymentDialog = false
+                        viewModel.upgradeSubscription(selectedUpgradePlan)
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
+                ) {
+                    Text("پرداخت موفقیت‌آمیز (شبیه‌سازی)", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showPaymentDialog = false
+                        viewModel.logSecurityEvent("PAYMENT_CANCELLED", "تراکنش خرید اشتراک طلایی لغو شد.")
+                    }
+                ) {
+                    Text("انصراف و بازگشت", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
         )
     }
 }

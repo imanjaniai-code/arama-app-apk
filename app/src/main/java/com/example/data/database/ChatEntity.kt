@@ -8,5 +8,6 @@ data class ChatEntity(
     @PrimaryKey(autoGenerate = true) val id: Int = 0,
     val sender: String, // "user" or "arama"
     val text: String,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long = System.currentTimeMillis(),
+    val isFailed: Boolean = false
 )

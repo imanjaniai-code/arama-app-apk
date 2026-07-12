@@ -3,6 +3,12 @@ package com.example.ui.screens
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.with
@@ -46,9 +52,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import com.example.R
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 import com.example.ui.theme.SoftGrey
 
 @OptIn(ExperimentalAnimationApi::class)
@@ -106,7 +115,7 @@ fun OnboardingScreen(
                 .fillMaxWidth()
                 .fillMaxHeight(0.45f)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MintGreen)
+                .background(SageTintBg)
                 .padding(24.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -131,7 +140,7 @@ fun OnboardingScreen(
                     text = title,
                     style = MaterialTheme.typography.displayLarge.copy(
                         fontSize = 26.sp,
-                        color = EmeraldDark,
+                        color = SageDeep,
                         fontWeight = FontWeight.Bold
                     ),
                     textAlign = TextAlign.Center
@@ -164,7 +173,7 @@ fun OnboardingScreen(
                 for (i in 0..2) {
                     val isSelected = i == page
                     val size = if (isSelected) 12.dp else 8.dp
-                    val color = if (isSelected) EmeraldPrimary else SoftGrey
+                    val color = if (isSelected) SagePrimary else SoftGrey
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -186,7 +195,7 @@ fun OnboardingScreen(
                     .testTag("onboarding_next_button"),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EmeraldPrimary,
+                    containerColor = SagePrimary,
                     contentColor = Color.White
                 )
             ) {
@@ -225,69 +234,29 @@ fun OnboardingScreen(
 
 @Composable
 fun OnboardingArtwork(page: Int) {
-    Canvas(modifier = Modifier.fillMaxSize()) {
-        val width = size.width
-        val height = size.height
-        val centerX = width / 2
-        val centerY = height / 2
+    val infiniteTransition = rememberInfiniteTransition(label = "floating")
+    val translationY by infiniteTransition.animateFloat(
+        initialValue = -12f,
+        targetValue = 12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 3500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "translationY"
+    )
 
-        when (page) {
-            0 -> {
-                // Large breathing circle representation (Empathetic partner theme)
-                drawCircle(
-                    color = EmeraldPrimary.copy(alpha = 0.2f),
-                    radius = centerX * 0.75f,
-                    center = Offset(centerX, centerY)
-                )
-                drawCircle(
-                    color = EmeraldPrimary.copy(alpha = 0.4f),
-                    radius = centerX * 0.55f,
-                    center = Offset(centerX, centerY)
-                )
-                drawCircle(
-                    color = EmeraldPrimary,
-                    radius = centerX * 0.35f,
-                    center = Offset(centerX, centerY)
-                )
-            }
-            1 -> {
-                // Dialog clouds overlapping (Empathetic conversation theme)
-                drawRoundRect(
-                    color = EmeraldPrimary.copy(alpha = 0.8f),
-                    topLeft = Offset(centerX - 100f, centerY - 120f),
-                    size = androidx.compose.ui.geometry.Size(200f, 120f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(40f, 40f)
-                )
-                drawRoundRect(
-                    color = EmeraldDark.copy(alpha = 0.8f),
-                    topLeft = Offset(centerX - 150f, centerY + 10f),
-                    size = androidx.compose.ui.geometry.Size(220f, 130f),
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(40f, 40f)
-                )
-            }
-            else -> {
-                // Heart & Flow curves (Mood assessment theme)
-                drawCircle(
-                    color = EmeraldPrimary.copy(alpha = 0.15f),
-                    radius = centerX * 0.8f,
-                    center = Offset(centerX, centerY)
-                )
-                // Cute stylized leaves / growth curve
-                drawArc(
-                    color = EmeraldPrimary,
-                    startAngle = 180f,
-                    sweepAngle = 180f,
-                    useCenter = false,
-                    topLeft = Offset(centerX - 80f, centerY - 80f),
-                    size = androidx.compose.ui.geometry.Size(160f, 160f),
-                    style = androidx.compose.ui.graphics.drawscope.Stroke(width = 16f)
-                )
-                drawCircle(
-                    color = EmeraldDark,
-                    radius = 24f,
-                    center = Offset(centerX, centerY - 80f)
-                )
-            }
-        }
+    val drawableRes = when (page) {
+        0 -> R.drawable.illustration_onboarding_leaf
+        1 -> R.drawable.illustration_onboarding_chat
+        else -> R.drawable.illustration_onboarding_chart
     }
+    Image(
+        painter = painterResource(id = drawableRes),
+        contentDescription = "تصویر معرفی آراما",
+        modifier = Modifier
+            .fillMaxSize()
+            .graphicsLayer {
+                this.translationY = translationY
+            }
+    )
 }

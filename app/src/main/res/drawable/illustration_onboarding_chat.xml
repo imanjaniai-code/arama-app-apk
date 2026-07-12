@@ -1,0 +1,38 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Background organic shape -->
+    <path
+        android:fillColor="#DDE3D6"
+        android:pathData="M100,15 C160,15 185,50 185,100 C185,150 150,185 100,185 C40,185 15,150 15,100 C15,45 40,15 100,15 Z" />
+    <!-- User/Right Chat Bubble -->
+    <path
+        android:fillColor="#5A6B52"
+        android:pathData="M100,50 h60 a15,15 0 0 1 15,15 v30 a15,15 0 0 1 -15,15 h-35 l-15,15 v-15 a15,15 0 0 1 -15,-15 v-30 a15,15 0 0 1 15,-15 z" />
+    <!-- Dots in User Bubble using standard vector paths -->
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M 111.5,80 a 3.5,3.5 0 1,0 7,0 a 3.5,3.5 0 1,0 -7,0" />
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M 126.5,80 a 3.5,3.5 0 1,0 7,0 a 3.5,3.5 0 1,0 -7,0" />
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M 141.5,80 a 3.5,3.5 0 1,0 7,0 a 3.5,3.5 0 1,0 -7,0" />
+    <!-- AI/Left Chat Bubble -->
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M45,100 h55 a12,12 0 0 1 12,12 v25 a12,12 0 0 1 -12,12 h-10 v12 l-12,-12 h-45 a12,12 0 0 1 -12,-12 v-25 a12,12 0 0 1 12,-12 z" />
+    <!-- Dots in AI Bubble using standard vector paths -->
+    <path
+        android:fillColor="#FBF9F5"
+        android:pathData="M 42,125 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0" />
+    <path
+        android:fillColor="#FBF9F5"
+        android:pathData="M 54,125 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0" />
+    <path
+        android:fillColor="#FBF9F5"
+        android:pathData="M 66,125 a 3,3 0 1,0 6,0 a 3,3 0 1,0 -6,0" />
+</vector>

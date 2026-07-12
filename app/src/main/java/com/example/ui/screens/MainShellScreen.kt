@@ -46,9 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.CrisisRed
 import com.example.ui.theme.CrisisRedBg
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 
 @Composable
 fun MainShellScreen(
@@ -80,7 +80,7 @@ fun MainShellScreen(
                     Box(
                         modifier = Modifier
                             .size(40.dp)
-                            .background(EmeraldPrimary, shape = RoundedCornerShape(12.dp)),
+                            .background(SagePrimary, shape = RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
@@ -96,10 +96,10 @@ fun MainShellScreen(
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = "آراما",
+                            text = "آراﻣﺎ",
                             style = MaterialTheme.typography.titleLarge.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = EmeraldDark,
+                                color = SageDeep,
                                 fontSize = 20.sp,
                                 lineHeight = 20.sp
                             )
@@ -107,7 +107,7 @@ fun MainShellScreen(
                         Text(
                             text = "ARAMA",
                             style = MaterialTheme.typography.labelSmall.copy(
-                                color = EmeraldDark.copy(alpha = 0.6f),
+                                color = SageDeep.copy(alpha = 0.6f),
                                 fontSize = 9.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 letterSpacing = 1.5.sp,
@@ -122,7 +122,7 @@ fun MainShellScreen(
             }
         },
         bottomBar = {
-            // Unified bottom navigation bar with active pills
+            // Unified bottom navigation bar with active pills - simplified to 3 tabs
             NavigationBar(
                 containerColor = MaterialTheme.colorScheme.surface,
                 modifier = Modifier
@@ -141,45 +141,27 @@ fun MainShellScreen(
                     },
                     label = { Text("گفتگو") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = EmeraldDark,
-                        selectedTextColor = EmeraldDark,
-                        indicatorColor = MintGreen
+                        selectedIconColor = SageDeep,
+                        selectedTextColor = SageDeep,
+                        indicatorColor = SageTintBg
                     ),
                     modifier = Modifier.testTag("nav_item_chat")
                 )
 
                 NavigationBarItem(
-                    selected = currentRoute == "mood",
-                    onClick = { viewModel.navigate("mood") },
-                    icon = {
-                        Icon(
-                            imageVector = Icons.Default.Mood,
-                            contentDescription = "ثبت احوال"
-                        )
-                    },
-                    label = { Text("احوال روحی") },
-                    colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = EmeraldDark,
-                        selectedTextColor = EmeraldDark,
-                        indicatorColor = MintGreen
-                    ),
-                    modifier = Modifier.testTag("nav_item_mood")
-                )
-
-                NavigationBarItem(
-                    selected = currentRoute == "dashboard",
+                    selected = currentRoute == "dashboard" || currentRoute == "mood",
                     onClick = { viewModel.navigate("dashboard") },
                     icon = {
                         Icon(
                             imageVector = Icons.Default.InsertChart,
-                            contentDescription = "نمودارها"
+                            contentDescription = "نمودار احساسات"
                         )
                     },
-                    label = { Text("نمودارها") },
+                    label = { Text("نمودار احساسات") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = EmeraldDark,
-                        selectedTextColor = EmeraldDark,
-                        indicatorColor = MintGreen
+                        selectedIconColor = SageDeep,
+                        selectedTextColor = SageDeep,
+                        indicatorColor = SageTintBg
                     ),
                     modifier = Modifier.testTag("nav_item_dashboard")
                 )
@@ -195,9 +177,9 @@ fun MainShellScreen(
                     },
                     label = { Text("تنظیمات") },
                     colors = NavigationBarItemDefaults.colors(
-                        selectedIconColor = EmeraldDark,
-                        selectedTextColor = EmeraldDark,
-                        indicatorColor = MintGreen
+                        selectedIconColor = SageDeep,
+                        selectedTextColor = SageDeep,
+                        indicatorColor = SageTintBg
                     ),
                     modifier = Modifier.testTag("nav_item_settings")
                 )

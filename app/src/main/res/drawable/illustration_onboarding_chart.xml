@@ -1,0 +1,37 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Background organic shape -->
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M100,20 C155,20 180,55 180,100 C180,145 155,180 100,180 C45,180 20,145 20,100 C20,55 45,20 100,20 Z" />
+    <!-- Grid lines -->
+    <path
+        android:strokeColor="#D9D2C4"
+        android:strokeWidth="1.5"
+        android:pathData="M40,70 L160,70 M40,100 L160,100 M40,130 L160,130" />
+    <!-- Trend curve (smooth bezier) -->
+    <path
+        android:strokeColor="#5A6B52"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M45,135 C70,145 80,85 105,95 C130,105 135,65 155,55" />
+    <!-- Pulse ring on the latest high point using standard path -->
+    <path
+        android:fillColor="#7C9070"
+        android:fillAlpha="0.3"
+        android:pathData="M 143,55 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0" />
+    <!-- Nodes on chart using standard paths -->
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M 40,135 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M 100,95 a 5,5 0 1,0 10,0 a 5,5 0 1,0 -10,0" />
+    <path
+        android:fillColor="#5A6B52"
+        android:pathData="M 149,55 a 6,6 0 1,0 12,0 a 6,6 0 1,0 -12,0" />
+</vector>

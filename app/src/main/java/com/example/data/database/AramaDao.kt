@@ -23,8 +23,28 @@ interface AramaDao {
     fun getAllChatMessages(): Flow<List<ChatEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertChatMessage(message: ChatEntity)
+    suspend fun insertChatMessage(message: ChatEntity): Long
 
     @Query("DELETE FROM chat_messages")
     suspend fun deleteAllChatMessages()
+
+    // Security log operations
+    @Query("SELECT * FROM security_logs ORDER BY timestamp DESC")
+    fun getAllSecurityLogs(): Flow<List<SecurityLogEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSecurityLog(log: SecurityLogEntity)
+
+    @Query("DELETE FROM security_logs")
+    suspend fun deleteAllSecurityLogs()
+
+    // Subscription operations
+    @Query("SELECT * FROM subscriptions WHERE userEmail = :email LIMIT 1")
+    suspend fun getSubscriptionForUser(email: String): SubscriptionEntity?
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertSubscription(subscription: SubscriptionEntity)
+
+    @Query("DELETE FROM subscriptions")
+    suspend fun deleteAllSubscriptions()
 }

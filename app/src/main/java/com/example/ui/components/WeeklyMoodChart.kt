@@ -67,14 +67,14 @@ fun WeeklyMoodChart(
                             text = "نمودار نوسانات خلق و خو (۷ روز گذشته)",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = EmeraldDark,
+                                color = SageDeep,
                                 fontSize = 15.sp
                             )
                         )
                         Icon(
                             imageVector = Icons.Default.TrendingUp,
                             contentDescription = "روند",
-                            tint = EmeraldPrimary,
+                            tint = SagePrimary,
                             modifier = Modifier.size(20.dp)
                         )
                     }
@@ -95,7 +95,7 @@ fun WeeklyMoodChart(
                             Box(
                                 modifier = Modifier
                                     .size(8.dp)
-                                    .background(EmeraldPrimary, shape = RoundedCornerShape(2.dp))
+                                    .background(SagePrimary, shape = RoundedCornerShape(2.dp))
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
@@ -125,7 +125,7 @@ fun WeeklyMoodChart(
                         text = "توزیع و درصد تکرار احساسات",
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldDark,
+                            color = SageDeep,
                             fontSize = 15.sp
                         )
                     )
@@ -183,8 +183,8 @@ fun WeeklyMoodLineChart(
             .height(200.dp)
             .padding(horizontal = 8.dp)
     ) {
-        val strokeColor = EmeraldPrimary
-        val gradientColor = MintGreen
+        val strokeColor = SagePrimary
+        val gradientColor = SageTintBg
 
         Canvas(modifier = Modifier.fillMaxSize()) {
             val width = size.width
@@ -315,7 +315,7 @@ fun WeeklyMoodLineChart(
                     text = getPersianDayName(mood.date),
                     style = MaterialTheme.typography.labelSmall.copy(
                         fontWeight = FontWeight.Medium,
-                        color = EmeraldDark.copy(alpha = 0.8f),
+                        color = SageDeep.copy(alpha = 0.8f),
                         fontSize = 10.sp
                     )
                 )
@@ -370,7 +370,7 @@ fun WeeklyMoodDistributionBarChart(
                         text = label,
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldDark
+                            color = SageDeep
                         )
                     )
                 }
@@ -400,7 +400,7 @@ fun WeeklyMoodDistributionBarChart(
                 Text(
                     text = "$count بار (${(fraction * 100).toInt()}%)",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = EmeraldDark.copy(alpha = 0.7f),
+                        color = SageDeep.copy(alpha = 0.7f),
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 11.sp
                     ),
@@ -448,8 +448,8 @@ fun WeeklyMoodInsightCard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MintGreen,
-            contentColor = EmeraldDark
+            containerColor = SageTintBg,
+            contentColor = SageDeep
         ),
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.fillMaxWidth(),
@@ -477,7 +477,7 @@ fun WeeklyMoodInsightCard(
                 Text(
                     text = "تحلیل خلاصه احوال این هفته",
                     style = MaterialTheme.typography.labelSmall.copy(
-                        color = EmeraldDark.copy(alpha = 0.6f),
+                        color = SageDeep.copy(alpha = 0.6f),
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.5.sp
                     )
@@ -487,7 +487,7 @@ fun WeeklyMoodInsightCard(
                     text = averageLabel,
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark,
+                        color = SageDeep,
                         fontSize = 18.sp
                     )
                 )
@@ -495,7 +495,7 @@ fun WeeklyMoodInsightCard(
                 Text(
                     text = "میانگین نمره روحی شما ${String.format(Locale.ENGLISH, "%.1f", averageScore)} از ۵ است. ذهن شما در مسیر صلح و آرامش قرار دارد.",
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = EmeraldDark.copy(alpha = 0.8f),
+                        color = SageDeep.copy(alpha = 0.8f),
                         lineHeight = 18.sp
                     )
                 )

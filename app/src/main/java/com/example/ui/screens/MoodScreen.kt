@@ -2,6 +2,7 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -46,7 +47,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.ui.draw.scale
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.tween
@@ -54,6 +59,8 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -61,9 +68,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 
 data class MoodItem(
     val emoji: String,
@@ -78,6 +85,7 @@ fun MoodScreen(
     val selectedEmoji by viewModel.selectedMoodEmoji.collectAsState()
     val selectedLabel by viewModel.selectedMoodLabel.collectAsState()
     val note by viewModel.moodNote.collectAsState()
+    val haptic = LocalHapticFeedback.current
 
     val moodOptions = listOf(
         MoodItem("😊", "عالی", Color(0xFF10B77F)),
@@ -100,7 +108,7 @@ fun MoodScreen(
         Icon(
             imageVector = Icons.Default.Spa,
             contentDescription = "حال روحی",
-            tint = EmeraldPrimary,
+            tint = SagePrimary,
             modifier = Modifier.size(48.dp)
         )
         Spacer(modifier = Modifier.height(16.dp))
@@ -108,7 +116,7 @@ fun MoodScreen(
             text = "احوال امروز شما چطور است؟",
             style = MaterialTheme.typography.headlineMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = EmeraldDark
+                color = SageDeep
             ),
             textAlign = TextAlign.Center
         )
@@ -133,6 +141,7 @@ fun MoodScreen(
                     mood = mood,
                     isSelected = selectedEmoji == mood.emoji,
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.selectMood(mood.emoji, mood.label)
                         viewModel.saveMoodCheckIn()
                     }
@@ -151,6 +160,7 @@ fun MoodScreen(
                     mood = mood,
                     isSelected = selectedEmoji == mood.emoji,
                     onClick = {
+                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                         viewModel.selectMood(mood.emoji, mood.label)
                         viewModel.saveMoodCheckIn()
                     }
@@ -164,8 +174,8 @@ fun MoodScreen(
         if (selectedEmoji != null) {
             Card(
                 colors = CardDefaults.cardColors(
-                    containerColor = MintGreen.copy(alpha = 0.5f),
-                    contentColor = EmeraldDark
+                    containerColor = SageTintBg.copy(alpha = 0.5f),
+                    contentColor = SageDeep
                 ),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
@@ -179,7 +189,7 @@ fun MoodScreen(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "ثبت شد",
-                        tint = EmeraldPrimary,
+                        tint = SagePrimary,
                         modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -212,7 +222,7 @@ fun MoodScreen(
                     Icon(
                         imageVector = Icons.Default.Create,
                         contentDescription = "یادداشت",
-                        tint = EmeraldPrimary
+                        tint = SagePrimary
                     )
                 },
                 modifier = Modifier
@@ -220,8 +230,8 @@ fun MoodScreen(
                     .height(120.dp)
                     .testTag("mood_note_input"),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EmeraldPrimary,
-                    focusedLabelColor = EmeraldPrimary
+                    focusedBorderColor = SagePrimary,
+                    focusedLabelColor = SagePrimary
                 ),
                 shape = RoundedCornerShape(14.dp)
             )
@@ -232,12 +242,32 @@ fun MoodScreen(
                 text = "✓ تغییرات یادداشت شما فوراً ذخیره می‌شود.",
                 style = MaterialTheme.typography.bodySmall.copy(
                     fontSize = 12.sp,
-                    color = EmeraldPrimary,
+                    color = SagePrimary,
                     fontWeight = FontWeight.Medium
                 ),
-                textAlign = TextAlign.Right,
+                textAlign = TextAlign.Start,
                 modifier = Modifier.fillMaxWidth()
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Button(
+                onClick = { viewModel.navigate("dashboard") },
+                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("mood_return_to_dashboard_button")
+            ) {
+                Text(
+                    text = "مشاهده روند و نمودار احساسات 📊",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(40.dp))
@@ -295,22 +325,22 @@ fun MoodScreen(
                 Icon(
                     imageVector = Icons.Default.MusicNote,
                     contentDescription = "موسیقی مدیتیشن",
-                    tint = EmeraldPrimary,
+                    tint = SagePrimary,
                     modifier = Modifier.size(24.dp)
                 )
                 Text(
                     text = "آواهای آرامش‌بخش مدیتیشن 🎧",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
             }
             Text(
                 text = "جهت هماهنگی با تمرین تنفس یا آرامش ذهن، یکی از آواهای زیر را پخش کنید:",
                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                textAlign = TextAlign.Right,
+                textAlign = TextAlign.Start,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 4.dp, bottom = 16.dp)
@@ -344,7 +374,7 @@ fun MoodScreen(
                             Box(
                                 modifier = Modifier
                                     .size(54.dp)
-                                    .background(MintGreen, shape = RoundedCornerShape(16.dp)),
+                                    .background(SageTintBg, shape = RoundedCornerShape(16.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
@@ -357,7 +387,7 @@ fun MoodScreen(
                                     text = currentTrack.title,
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = EmeraldDark
+                                        color = SageDeep
                                     )
                                 )
                                 Text(
@@ -376,15 +406,16 @@ fun MoodScreen(
 
                     // Progress bar
                     Column(modifier = Modifier.fillMaxWidth()) {
+                        val isDark = isSystemInDarkTheme()
                         Slider(
                             value = trackProgress,
                             onValueChange = { newValue ->
                                 elapsedTimeSeconds = (newValue * totalSeconds).toInt()
                             },
                             colors = SliderDefaults.colors(
-                                thumbColor = EmeraldPrimary,
-                                activeTrackColor = EmeraldPrimary,
-                                inactiveTrackColor = EmeraldPrimary.copy(alpha = 0.2f)
+                                thumbColor = SagePrimary,
+                                activeTrackColor = SagePrimary,
+                                inactiveTrackColor = if (isDark) Color.White.copy(alpha = 0.25f) else SagePrimary.copy(alpha = 0.2f)
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -396,11 +427,17 @@ fun MoodScreen(
                         ) {
                             Text(
                                 text = currentTrack.duration,
-                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = if (isDark) Color(0xFFDDE3D6) else SageDeep.copy(alpha = 0.8f),
+                                    fontWeight = FontWeight.Medium
+                                )
                             )
                             Text(
                                 text = formatElapsedTime(elapsedTimeSeconds),
-                                style = MaterialTheme.typography.bodySmall.copy(color = EmeraldPrimary, fontWeight = FontWeight.Bold)
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = if (isDark) Color(0xFFDDE3D6) else SagePrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
                             )
                         }
                     }
@@ -424,7 +461,7 @@ fun MoodScreen(
                             Icon(
                                 imageVector = Icons.Default.SkipPrevious,
                                 contentDescription = "آهنگ قبلی",
-                                tint = EmeraldDark,
+                                tint = SageDeep,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -435,7 +472,7 @@ fun MoodScreen(
                             onClick = { isPlaying = !isPlaying },
                             modifier = Modifier
                                 .size(50.dp)
-                                .background(EmeraldPrimary, shape = androidx.compose.foundation.shape.CircleShape)
+                                .background(SagePrimary, shape = androidx.compose.foundation.shape.CircleShape)
                                 .testTag("play_pause_button")
                         ) {
                             Icon(
@@ -459,7 +496,7 @@ fun MoodScreen(
                             Icon(
                                 imageVector = Icons.Default.SkipNext,
                                 contentDescription = "آهنگ بعدی",
-                                tint = EmeraldDark,
+                                tint = SageDeep,
                                 modifier = Modifier.size(28.dp)
                             )
                         }
@@ -476,16 +513,16 @@ fun MoodScreen(
                         Icon(
                             imageVector = Icons.Default.VolumeUp,
                             contentDescription = "صدا",
-                            tint = EmeraldDark.copy(alpha = 0.6f),
+                            tint = SageDeep.copy(alpha = 0.6f),
                             modifier = Modifier.size(18.dp)
                         )
                         Slider(
                             value = volumeValue,
                             onValueChange = { volumeValue = it },
                             colors = SliderDefaults.colors(
-                                thumbColor = EmeraldPrimary.copy(alpha = 0.8f),
-                                activeTrackColor = EmeraldPrimary.copy(alpha = 0.6f),
-                                inactiveTrackColor = EmeraldPrimary.copy(alpha = 0.1f)
+                                thumbColor = SagePrimary.copy(alpha = 0.8f),
+                                activeTrackColor = SagePrimary.copy(alpha = 0.6f),
+                                inactiveTrackColor = SagePrimary.copy(alpha = 0.1f)
                             ),
                             modifier = Modifier.weight(1f)
                         )
@@ -509,8 +546,8 @@ fun MoodScreen(
                 ) {
                     tracks.forEachIndexed { index, track ->
                         val isCurrent = index == currentTrackIndex
-                        val cardBg = if (isCurrent) MintGreen else Color.Transparent
-                        val cardBorder = if (isCurrent) EmeraldPrimary else Color.Transparent
+                        val cardBg = if (isCurrent) SageTintBg else Color.Transparent
+                        val cardBorder = if (isCurrent) SagePrimary else Color.Transparent
 
                         Row(
                             modifier = Modifier
@@ -540,7 +577,7 @@ fun MoodScreen(
                                         text = track.title,
                                         style = MaterialTheme.typography.bodyMedium.copy(
                                             fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isCurrent) EmeraldDark else MaterialTheme.colorScheme.onSurface
+                                            color = if (isCurrent) SageDeep else MaterialTheme.colorScheme.onSurface
                                         )
                                     )
                                     Text(
@@ -554,7 +591,7 @@ fun MoodScreen(
                                 Text(
                                     text = "در حال پخش...",
                                     style = MaterialTheme.typography.bodySmall.copy(
-                                        color = EmeraldPrimary,
+                                        color = SagePrimary,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -600,7 +637,7 @@ fun AudioVisualizer(isPlaying: Boolean) {
                 modifier = Modifier
                     .width(4.dp)
                     .height(24.dp * heightFraction)
-                    .background(EmeraldPrimary, RoundedCornerShape(2.dp))
+                    .background(SagePrimary, RoundedCornerShape(2.dp))
             )
         }
     }
@@ -612,13 +649,23 @@ fun MoodButton(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor = if (isSelected) EmeraldPrimary else Color.Transparent
-    val backgroundColor = if (isSelected) MintGreen else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+    val borderColor = if (isSelected) SagePrimary else Color.Transparent
+    val backgroundColor = if (isSelected) SageTintBg else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.15f else 1.0f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "mood_button_scale"
+    )
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .width(96.dp)
+            .scale(scale)
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .border(2.dp, borderColor, RoundedCornerShape(16.dp))
@@ -636,7 +683,7 @@ fun MoodButton(
             text = mood.label,
             style = MaterialTheme.typography.bodyMedium.copy(
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) EmeraldDark else MaterialTheme.colorScheme.onSurface
+                color = if (isSelected) SageDeep else MaterialTheme.colorScheme.onSurface
             ),
             textAlign = TextAlign.Center
         )

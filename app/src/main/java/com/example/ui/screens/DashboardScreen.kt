@@ -13,12 +13,16 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.InsertChart
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -60,10 +64,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.database.MoodEntity
 import com.example.ui.components.WeeklyMoodChart
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import androidx.compose.foundation.Image
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import com.example.R
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
+import com.example.ui.theme.SageTintBgDark
 import com.example.ui.theme.SoftGrey
+import androidx.compose.foundation.isSystemInDarkTheme
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -73,6 +84,7 @@ fun DashboardScreen(
     viewModel: MainViewModel
 ) {
     val moods by viewModel.allMoods.collectAsState()
+    val haptic = LocalHapticFeedback.current
 
     LazyColumn(
         modifier = Modifier
@@ -91,14 +103,14 @@ fun DashboardScreen(
                 Icon(
                     imageVector = Icons.Default.InsertChart,
                     contentDescription = "داشبورد روند",
-                    tint = EmeraldPrimary,
+                    tint = SagePrimary,
                     modifier = Modifier.size(48.dp)
                 )
                 Text(
                     text = "روند احوال روحی شما",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -121,7 +133,117 @@ fun DashboardScreen(
                             text = "🔄 بازسازی نمونه ۷ روز گذشته (برای ارزیابی)",
                             style = MaterialTheme.typography.bodySmall.copy(
                                 fontWeight = FontWeight.Bold,
-                                color = EmeraldPrimary
+                                color = SagePrimary
+                            )
+                        )
+                    }
+                }
+            }
+        }
+
+        if (moods.isEmpty()) {
+            // Empty state (Supportive, non-shaming) with mock generator option - placed at the top for visual hierarchy
+            item {
+                val isDark = isSystemInDarkTheme()
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (isDark) SageTintBgDark else SageTintBg.copy(alpha = 0.35f),
+                        contentColor = if (isDark) Color.White else SageDeep
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp)
+                        .testTag("dashboard_empty_card")
+                ) {
+                    Column(
+                        modifier = Modifier.padding(24.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Image(
+                            painter = painterResource(id = R.drawable.illustration_empty_dashboard),
+                            contentDescription = "بدون ثبت احوال",
+                            modifier = Modifier.size(120.dp)
+                        )
+                        Text(
+                            text = "هر وقت آماده بودی ما اینجاییم...",
+                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "ثبت روزانه احوال روحی فاقد هرگونه جریمه یا فشار است. هر زمان تمایل داشتید، احساس فعلی خود را ثبت کنید تا به مرور خودآگاهی عمیق‌تری نسبت به احساسات خود پیدا کنید.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                lineHeight = 24.sp,
+                                color = if (isDark) Color.White.copy(alpha = 0.85f) else SageDeep.copy(alpha = 0.85f)
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                        
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.navigate("mood") },
+                                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = "اولین ثبت حال روحی 🌱",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                                )
+                            }
+                            
+                            OutlinedButton(
+                                onClick = { viewModel.generateSampleWeeklyData() },
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier.fillMaxWidth().testTag("generate_sample_button")
+                            ) {
+                                Text(
+                                    text = "شبیه‌سازی داده‌های آزمایشی ۷ روز گذشته 📊",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = SagePrimary
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Prominent Mood Log Button if moods is not empty (so users with existing logs can add more)
+        if (moods.isNotEmpty()) {
+            item {
+                Button(
+                    onClick = { viewModel.navigate("mood") },
+                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(52.dp)
+                        .testTag("dashboard_log_mood_button")
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Mood,
+                            contentDescription = "ثبت احوال جدید",
+                            tint = Color.White,
+                            modifier = Modifier.size(22.dp)
+                        )
+                        Text(
+                            text = "ثبت احوال روحی جدید 🌱",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 15.sp
                             )
                         )
                     }
@@ -163,6 +285,7 @@ fun DashboardScreen(
                                     if (completedCycles >= maxCycles) {
                                         breathPhase = "completed"
                                         isBreathingActive = false
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                     } else {
                                         breathPhase = "in"
                                         phaseSecondsLeft = 4
@@ -233,13 +356,13 @@ fun DashboardScreen(
                             Box(
                                 modifier = Modifier
                                     .size(40.dp)
-                                    .background(MintGreen, shape = androidx.compose.foundation.shape.CircleShape),
+                                    .background(SageTintBg, shape = androidx.compose.foundation.shape.CircleShape),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Spa,
                                     contentDescription = "تنفس عمیق",
-                                    tint = EmeraldPrimary,
+                                    tint = SagePrimary,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -248,21 +371,21 @@ fun DashboardScreen(
                                     text = "تمرین تنفس عمیق تعاملی 🧘",
                                     style = MaterialTheme.typography.titleMedium.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = EmeraldDark
+                                        color = SageDeep
                                     ),
-                                    textAlign = TextAlign.Right
+                                    textAlign = TextAlign.Start
                                 )
                                 Text(
                                     text = "کاهش آنی اضطراب و استرس به روش تنفس ۴-۴-۴",
                                     style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                    textAlign = TextAlign.Right
+                                    textAlign = TextAlign.Start
                                 )
                             }
                         }
                         Text(
                             text = if (isExpanded) "بستن ▲" else "شروع تمرین ▼",
                             style = MaterialTheme.typography.labelLarge.copy(
-                                color = EmeraldPrimary,
+                                color = SagePrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         )
@@ -281,7 +404,7 @@ fun DashboardScreen(
                                     text = "✨ تمرین با موفقیت انجام شد ✨",
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = EmeraldPrimary
+                                        color = SagePrimary
                                     ),
                                     textAlign = TextAlign.Center
                                 )
@@ -297,7 +420,7 @@ fun DashboardScreen(
                                         breathPhase = "idle"
                                         completedCycles = 0
                                     },
-                                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
                                     shape = RoundedCornerShape(12.dp),
                                     modifier = Modifier.fillMaxWidth(0.6f)
                                 ) {
@@ -326,7 +449,7 @@ fun DashboardScreen(
                                     text = statusText,
                                     style = MaterialTheme.typography.titleLarge.copy(
                                         fontWeight = FontWeight.Bold,
-                                        color = EmeraldDark,
+                                        color = SageDeep,
                                         fontSize = 22.sp
                                     ),
                                     textAlign = TextAlign.Center
@@ -344,7 +467,7 @@ fun DashboardScreen(
                                     modifier = Modifier
                                         .size(260.dp)
                                         .background(
-                                            color = EmeraldPrimary.copy(alpha = if (breathPhase == "hold") glowAlpha * 0.2f else 0.08f),
+                                            color = SagePrimary.copy(alpha = if (breathPhase == "hold") glowAlpha * 0.2f else 0.08f),
                                             shape = androidx.compose.foundation.shape.CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -356,8 +479,8 @@ fun DashboardScreen(
                                             .background(
                                                 brush = Brush.radialGradient(
                                                     colors = listOf(
-                                                        MintGreen,
-                                                        EmeraldPrimary
+                                                        SageTintBg,
+                                                        SagePrimary
                                                     )
                                                 ),
                                                 shape = androidx.compose.foundation.shape.CircleShape
@@ -401,7 +524,7 @@ fun DashboardScreen(
                                         text = "چرخه $completedCycles از $maxCycles",
                                         style = MaterialTheme.typography.titleMedium.copy(
                                             fontWeight = FontWeight.Bold,
-                                            color = EmeraldPrimary
+                                            color = SagePrimary
                                         )
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
@@ -419,7 +542,7 @@ fun DashboardScreen(
                                                 phaseSecondsLeft = 4
                                                 completedCycles = 0
                                             },
-                                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
+                                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
                                             shape = RoundedCornerShape(14.dp),
                                             modifier = Modifier
                                                 .fillMaxWidth(0.7f)
@@ -459,77 +582,7 @@ fun DashboardScreen(
             }
         }
 
-        if (moods.isEmpty()) {
-            // Empty state (Supportive, non-shaming) with mock generator option
-            item {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MintGreen.copy(alpha = 0.5f),
-                        contentColor = EmeraldDark
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 12.dp)
-                        .testTag("dashboard_empty_card")
-                ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Spa,
-                            contentDescription = "آرامش",
-                            tint = EmeraldPrimary,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Text(
-                            text = "هر وقت آماده بودی ما اینجاییم...",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            text = "ثبت روزانه احوال روحی فاقد هرگونه جریمه یا فشار است. هر زمان تمایل داشتید، احساس فعلی خود را ثبت کنید تا به مرور خودآگاهی عمیق‌تری نسبت به احساسات خود پیدا کنید.",
-                            style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 24.sp),
-                            textAlign = TextAlign.Center
-                        )
-                        
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            Button(
-                                onClick = { viewModel.navigate("mood") },
-                                colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "اولین ثبت حال روحی 🌱",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                            
-                            OutlinedButton(
-                                onClick = { viewModel.generateSampleWeeklyData() },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().testTag("generate_sample_button")
-                            ) {
-                                Text(
-                                    text = "شبیه‌سازی داده‌های آزمایشی ۷ روز گذشته 📊",
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = EmeraldPrimary
-                                    )
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        } else {
+        if (moods.isNotEmpty()) {
             // Display the beautiful custom WeeklyMoodChart component
             item {
                 WeeklyMoodChart(moods = moods)
@@ -541,12 +594,12 @@ fun DashboardScreen(
                     text = "سوابق احوال ثبت‌شده",
                     style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 12.dp),
-                    textAlign = TextAlign.Right
+                    textAlign = TextAlign.Start
                 )
             }
 
@@ -582,7 +635,7 @@ fun DashboardScreen(
                                 Text(
                                     text = "حس و حال: ${mood.moodLabel}",
                                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                                    textAlign = TextAlign.Right
+                                    textAlign = TextAlign.Start
                                 )
                                 Text(
                                     text = mood.date,
@@ -597,8 +650,154 @@ fun DashboardScreen(
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         lineHeight = 20.sp
                                     ),
-                                    textAlign = TextAlign.Right
+                                    textAlign = TextAlign.Start
                                 )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // --- Ambient Sound Player Card ---
+        item {
+            val isPlaying by viewModel.isAmbientPlaying.collectAsState()
+            val currentTrackId by viewModel.currentAmbientTrack.collectAsState()
+            val volume by viewModel.ambientVolume.collectAsState()
+
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                shape = RoundedCornerShape(24.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 12.dp)
+                    .testTag("ambient_player_card")
+            ) {
+                Column(
+                    modifier = Modifier.padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(SageTintBg),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = "🎧", fontSize = 20.sp)
+                        }
+                        
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "نوای آرامش‌بخش محیطی",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = SageDeep
+                                ),
+                                textAlign = TextAlign.Start
+                            )
+                            Text(
+                                text = "برای افزایش تمرکز، کاهش استرس یا خوابی آرام",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                                ),
+                                textAlign = TextAlign.Start
+                            )
+                        }
+                    }
+
+                    // Sound Track Selector Row
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        val tracks = listOf(
+                            Triple("rain", "🌧️ باران نرم", "rain_track"),
+                            Triple("ocean", "🌊 موج دریا", "ocean_track"),
+                            Triple("white", "🍃 نویز سفید", "white_track")
+                        )
+
+                        tracks.forEach { (trackId, label, tag) ->
+                            val isSelected = currentTrackId == trackId && isPlaying
+                            
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(if (isSelected) SagePrimary else MaterialTheme.colorScheme.surface)
+                                    .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                        if (isSelected) {
+                                            viewModel.stopAmbient()
+                                        } else {
+                                            viewModel.playAmbient(trackId)
+                                        }
+                                    }
+                                    .padding(vertical = 10.dp, horizontal = 4.dp)
+                                    .testTag(tag),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = label,
+                                    style = MaterialTheme.typography.labelMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+
+                    // Volume slider and active playback visualizer
+                    if (isPlaying) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(text = "🔈", fontSize = 16.sp)
+                            
+                            Slider(
+                                value = volume,
+                                onValueChange = { viewModel.setAmbientVolume(it) },
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .testTag("ambient_volume_slider"),
+                                colors = SliderDefaults.colors(
+                                    thumbColor = SagePrimary,
+                                    activeTrackColor = SagePrimary,
+                                    inactiveTrackColor = SageTintBg
+                                )
+                            )
+                            
+                            Text(text = "🔊", fontSize = 16.sp)
+
+                            Button(
+                                onClick = {
+                                    haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                    viewModel.stopAmbient()
+                                },
+                                contentPadding = PaddingValues(0.dp),
+                                modifier = Modifier
+                                    .size(36.dp)
+                                    .testTag("stop_ambient_button"),
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.error,
+                                    contentColor = Color.White
+                                )
+                            ) {
+                                Text(text = "⏸️", fontSize = 14.sp)
                             }
                         }
                     }

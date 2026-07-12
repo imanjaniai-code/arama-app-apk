@@ -1,0 +1,28 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    <!-- Soft organic blob background -->
+    <path
+        android:fillColor="#EDE9E1"
+        android:pathData="M100,20 C150,20 180,60 180,100 C180,150 140,180 100,180 C50,180 20,140 20,100 C20,50 50,20 100,20 Z" />
+    <!-- Wave curve at the bottom -->
+    <path
+        android:strokeColor="#A99C8D"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M40,135 C70,155 130,115 160,135" />
+    <!-- Stylized minimalist leaf -->
+    <path
+        android:fillColor="#5A6B52"
+        android:pathData="M100,45 C135,75 135,125 100,155 C65,125 65,75 100,45 Z" />
+    <path
+        android:fillColor="#7C9070"
+        android:pathData="M100,45 C118,75 118,125 100,155 Z" />
+    <!-- Leaf stem -->
+    <path
+        android:strokeColor="#EDE9E1"
+        android:strokeWidth="2"
+        android:pathData="M100,45 L100,155" />
+</vector>

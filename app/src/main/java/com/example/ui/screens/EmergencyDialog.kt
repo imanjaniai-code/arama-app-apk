@@ -93,7 +93,7 @@ fun EmergencyDialog(
                                 color = CrisisRed,
                                 fontWeight = FontWeight.Bold
                             ),
-                            textAlign = TextAlign.Right
+                            textAlign = TextAlign.Start
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Icon(

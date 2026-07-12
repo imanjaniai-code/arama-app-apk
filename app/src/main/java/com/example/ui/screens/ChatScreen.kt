@@ -27,11 +27,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.alpha
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Psychology
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -58,11 +61,13 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.sp
 import com.example.data.database.ChatEntity
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 import com.example.ui.theme.SoftGrey
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -75,6 +80,7 @@ fun ChatScreen(
     val userName by viewModel.userName.collectAsState()
     var nameInputText by remember { mutableStateOf("") }
     val messages by viewModel.chatMessages.collectAsState()
+    val haptic = LocalHapticFeedback.current
     val isTyping by viewModel.isTyping.collectAsState()
     var inputTexValue by remember { mutableStateOf("") }
 
@@ -112,7 +118,7 @@ fun ChatScreen(
                 Icon(
                     imageVector = Icons.Default.Psychology,
                     contentDescription = "آراما",
-                    tint = EmeraldPrimary,
+                    tint = SagePrimary,
                     modifier = Modifier.size(72.dp)
                 )
                 Spacer(modifier = Modifier.height(24.dp))
@@ -120,7 +126,7 @@ fun ChatScreen(
                     text = "به آراما خوش آمدید",
                     style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = EmeraldDark
+                        color = SageDeep
                     ),
                     textAlign = TextAlign.Center
                 )
@@ -144,8 +150,8 @@ fun ChatScreen(
                         .testTag("name_input_field"),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = EmeraldPrimary,
-                        focusedLabelColor = EmeraldPrimary
+                        focusedBorderColor = SagePrimary,
+                        focusedLabelColor = SagePrimary
                     ),
                     shape = RoundedCornerShape(16.dp)
                 )
@@ -161,7 +167,7 @@ fun ChatScreen(
                         .height(50.dp)
                         .testTag("confirm_name_button"),
                     shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = EmeraldPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
                 ) {
                     Text(
                         text = "شروع گفتگو",
@@ -185,7 +191,7 @@ fun ChatScreen(
                     Icon(
                         imageVector = Icons.Default.Spa,
                         contentDescription = "آرامش",
-                        tint = EmeraldPrimary,
+                        tint = SagePrimary,
                         modifier = Modifier.size(64.dp)
                     )
                     Spacer(modifier = Modifier.height(16.dp))
@@ -193,7 +199,7 @@ fun ChatScreen(
                         text = "سلام $userName عزیز، من آراما هستم",
                         style = MaterialTheme.typography.headlineMedium.copy(
                             fontWeight = FontWeight.Bold,
-                            color = EmeraldDark
+                            color = SageDeep
                         ),
                         textAlign = TextAlign.Center
                     )
@@ -213,7 +219,7 @@ fun ChatScreen(
                     // Render Icebreakers
                     Text(
                         text = "برای شروع می‌توانید یکی از موارد زیر را انتخاب کنید:",
-                        style = MaterialTheme.typography.labelLarge.copy(color = EmeraldPrimary),
+                        style = MaterialTheme.typography.labelLarge.copy(color = SagePrimary),
                         modifier = Modifier.padding(bottom = 12.dp)
                     )
 
@@ -231,6 +237,7 @@ fun ChatScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .clickable {
+                                        haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
                                         viewModel.sendMessage(suggestion)
                                     }
                                     .testTag("icebreaker_${suggestion.take(5)}")
@@ -257,7 +264,7 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(messages) { message ->
-                        ChatMessageBubble(message = message)
+                        ChatMessageBubble(message = message, onRetry = { viewModel.retryMessage(it) })
                     }
 
                     // Typing Indicator
@@ -293,50 +300,106 @@ fun ChatScreen(
                 )
             }
 
-            // Message input area
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surface)
-                    .padding(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                OutlinedTextField(
-                    value = inputTexValue,
-                    onValueChange = { inputTexValue = it },
-                    placeholder = { Text("اینجا بنویسید...") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .testTag("chat_text_input"),
-                    maxLines = 4,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = EmeraldPrimary,
-                        focusedLabelColor = EmeraldPrimary
+            val chatLimitExceeded by viewModel.chatLimitExceeded.collectAsState()
+
+            if (chatLimitExceeded) {
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.95f),
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer
                     ),
-                    shape = RoundedCornerShape(20.dp)
-                )
-
-                Spacer(modifier = Modifier.width(8.dp))
-
-                IconButton(
-                    onClick = {
-                        if (inputTexValue.trim().isNotEmpty()) {
-                            viewModel.sendMessage(inputTexValue)
-                            inputTexValue = ""
-                        }
-                    },
+                    shape = RoundedCornerShape(16.dp),
                     modifier = Modifier
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(EmeraldPrimary)
-                        .testTag("send_message_button")
+                        .fillMaxWidth()
+                        .padding(12.dp)
+                        .testTag("chat_limit_banner")
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "ارسال پیام",
-                        tint = Color.White,
-                        modifier = Modifier.size(20.dp)
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "🚫 حد مجاز پیام‌های روزانه به پایان رسید",
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            textAlign = TextAlign.Center
+                        )
+                        Text(
+                            text = "شما به عنوان کاربر طرح رایگان، امروز ۵ پیام فرستاده‌اید. برای باز کردن قفل پیام‌های نامحدود، هم‌اکنون به طرح طلایی بپیوندید.",
+                            style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Button(
+                                onClick = { viewModel.navigate("settings") },
+                                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("ارتقای آنی اشتراک 🌟", color = Color.White)
+                            }
+                            Button(
+                                onClick = { viewModel.resetDailyLimitsSimulated() },
+                                colors = ButtonDefaults.buttonColors(containerColor = SageDeep),
+                                shape = RoundedCornerShape(10.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("ریست آزمایشی حد مجاز", color = Color.White)
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Message input area
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    OutlinedTextField(
+                        value = inputTexValue,
+                        onValueChange = { inputTexValue = it },
+                        placeholder = { Text("اینجا بنویسید...") },
+                        modifier = Modifier
+                            .weight(1f)
+                            .testTag("chat_text_input"),
+                        maxLines = 4,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        ),
+                        shape = RoundedCornerShape(20.dp)
                     )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    IconButton(
+                        onClick = {
+                            if (inputTexValue.trim().isNotEmpty()) {
+                                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                                viewModel.sendMessage(inputTexValue)
+                                inputTexValue = ""
+                            }
+                        },
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(CircleShape)
+                            .background(SagePrimary)
+                            .testTag("send_message_button")
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "ارسال پیام",
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
         }
@@ -344,16 +407,28 @@ fun ChatScreen(
 }
 
 @Composable
-fun ChatMessageBubble(message: ChatEntity) {
+fun ChatMessageBubble(message: ChatEntity, onRetry: ((ChatEntity) -> Unit)? = null) {
     val isUser = message.sender == "user"
-    val bubbleColor = if (isUser) EmeraldPrimary else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
-    val alignment = if (isUser) Alignment.End else Alignment.Start
+    val bubbleColor = if (message.isFailed) {
+        MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
+    } else if (isUser) {
+        SagePrimary
+    } else {
+        MaterialTheme.colorScheme.surfaceVariant
+    }
+    val textColor = if (message.isFailed) {
+        MaterialTheme.colorScheme.onErrorContainer
+    } else if (isUser) {
+        Color.White
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val alignment = if (isUser) Alignment.Start else Alignment.End
 
     val corners = if (isUser) {
-        RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 2.dp)
-    } else {
         RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 2.dp, bottomEnd = 16.dp)
+    } else {
+        RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 2.dp)
     }
 
     val timeString = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(message.timestamp))
@@ -364,46 +439,125 @@ fun ChatMessageBubble(message: ChatEntity) {
     ) {
         Row(
             verticalAlignment = Alignment.Bottom,
-            horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start,
+            horizontalArrangement = if (isUser) Arrangement.Start else Arrangement.End,
             modifier = Modifier.fillMaxWidth(0.85f)
         ) {
-            if (!isUser) {
-                Icon(
-                    imageVector = Icons.Default.Spa,
-                    contentDescription = "آراما",
-                    tint = EmeraldPrimary,
-                    modifier = Modifier
-                        .padding(bottom = 4.dp, end = 6.dp)
-                        .size(18.dp)
-                )
-            }
-
-            Column {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = bubbleColor,
-                        contentColor = textColor
-                    ),
-                    shape = corners,
-                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
-                        Text(
-                            text = message.text,
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
-                            textAlign = TextAlign.Right
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = timeString,
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                fontSize = 10.sp,
-                                color = textColor.copy(alpha = 0.6f)
-                            ),
-                            textAlign = TextAlign.Left,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+            if (isUser) {
+                // User bubble (No avatar, aligned to right/Start)
+                Column {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = bubbleColor,
+                            contentColor = textColor
+                        ),
+                        shape = corners,
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                            Text(
+                                text = message.text,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                                textAlign = TextAlign.Start
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = timeString,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 10.sp,
+                                    color = textColor.copy(alpha = 0.6f)
+                                ),
+                                textAlign = TextAlign.End,
+                                modifier = Modifier.align(Alignment.End)
+                            )
+                        }
                     }
+
+                    if (message.isFailed && onRetry != null) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        ) {
+                            Text(
+                                text = "ارسال ناموفق بود.",
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                            Row(
+                                modifier = Modifier
+                                    .clickable { onRetry(message) }
+                                    .padding(vertical = 2.dp, horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(2.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "تلاش مجدد",
+                                    tint = SagePrimary,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = "تلاش مجدد",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = SagePrimary,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                // AI message (Bubble first in RTL Row, then Avatar Box so it sits on the left outer edge)
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = bubbleColor,
+                            contentColor = textColor
+                        ),
+                        shape = corners,
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                            Text(
+                                text = message.text,
+                                style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
+                                textAlign = TextAlign.Start
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = timeString,
+                                style = MaterialTheme.typography.bodySmall.copy(
+                                    fontSize = 10.sp,
+                                    color = textColor.copy(alpha = 0.6f)
+                                ),
+                                textAlign = TextAlign.Start,
+                                modifier = Modifier.align(Alignment.Start)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Beautiful AI Avatar with brand leaf (Spa) logo
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(SagePrimary.copy(alpha = 0.15f), shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Spa,
+                        contentDescription = "آراما",
+                        tint = SagePrimary,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
         }
@@ -413,48 +567,124 @@ fun ChatMessageBubble(message: ChatEntity) {
 @Composable
 fun ChatTypingIndicator() {
     val infiniteTransition = rememberInfiniteTransition(label = "typing")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
+    
+    val dot1Scale by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(600),
+            animation = tween(durationMillis = 600, easing = androidx.compose.animation.core.FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "typing_alpha"
+        label = "dot1"
+    )
+    val dot2Scale by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600, delayMillis = 150, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2"
+    )
+    val dot3Scale by infiniteTransition.animateFloat(
+        initialValue = 0.4f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 600, delayMillis = 300, easing = androidx.compose.animation.core.FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3"
     )
 
-    Row(
-        modifier = Modifier
-            .padding(start = 16.dp, top = 8.dp)
-            .fillMaxWidth(0.5f),
-        verticalAlignment = Alignment.CenterVertically
+    // Gentle breathing pulse for the Spa icon
+    val iconPulse by infiniteTransition.animateFloat(
+        initialValue = 0.8f,
+        targetValue = 1.2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1200, easing = androidx.compose.animation.core.EaseInOutQuad),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "iconPulse"
+    )
+
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.End
     ) {
-        Icon(
-            imageVector = Icons.Default.Spa,
-            contentDescription = "در حال پاسخ...",
-            tint = EmeraldPrimary,
-            modifier = Modifier.size(16.dp)
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant
-            ),
-            shape = RoundedCornerShape(12.dp)
+        Row(
+            modifier = Modifier
+                .padding(vertical = 8.dp)
+                .fillMaxWidth(0.85f),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
         ) {
-            Row(
-                modifier = Modifier
-                    .alpha(alpha)
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f)
+                ),
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Text(
-                    text = "آراما در حال نوشتن پاسخ...",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium
+                Row(
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Text(
+                        text = "آراما در حال نوشتن",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     )
+                    
+                    // Pulsing dots container
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .scale(dot1Scale)
+                                .alpha(dot1Scale)
+                                .background(SagePrimary, shape = CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .scale(dot2Scale)
+                                .alpha(dot2Scale)
+                                .background(SagePrimary, shape = CircleShape)
+                        )
+                        Box(
+                            modifier = Modifier
+                                .size(6.dp)
+                                .scale(dot3Scale)
+                                .alpha(dot3Scale)
+                                .background(SagePrimary, shape = CircleShape)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            // Soft breathing outer circle around the icon (avatar)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(32.dp)
+                    .scale(iconPulse)
+                    .alpha((1.4f - iconPulse).coerceIn(0.1f, 0.8f))
+                    .background(SagePrimary.copy(alpha = 0.15f), shape = CircleShape)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Spa,
+                    contentDescription = "آراما در حال نوشتن...",
+                    tint = SagePrimary,
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }

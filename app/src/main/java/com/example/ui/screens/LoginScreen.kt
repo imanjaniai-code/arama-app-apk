@@ -43,9 +43,9 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.EmeraldDark
-import com.example.ui.theme.EmeraldPrimary
-import com.example.ui.theme.MintGreen
+import com.example.ui.theme.SageDeep
+import com.example.ui.theme.SagePrimary
+import com.example.ui.theme.SageTintBg
 
 @Composable
 fun LoginScreen(
@@ -74,7 +74,7 @@ fun LoginScreen(
             Icon(
                 imageVector = Icons.Default.Spa,
                 contentDescription = "آیکون آراما",
-                tint = EmeraldPrimary,
+                tint = SagePrimary,
                 modifier = Modifier.size(72.dp)
             )
             Spacer(modifier = Modifier.height(8.dp))
@@ -82,7 +82,7 @@ fun LoginScreen(
                 text = "آراما",
                 style = MaterialTheme.typography.displayLarge.copy(
                     fontSize = 36.sp,
-                    color = EmeraldDark,
+                    color = SageDeep,
                     fontWeight = FontWeight.Black
                 ),
                 textAlign = TextAlign.Center
@@ -91,7 +91,7 @@ fun LoginScreen(
                 text = "arama",
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontSize = 14.sp,
-                    color = EmeraldPrimary,
+                    color = SagePrimary,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
                 ),
@@ -106,7 +106,7 @@ fun LoginScreen(
             text = "ورود یا ثبت‌نام سریع",
             style = MaterialTheme.typography.titleLarge.copy(
                 fontWeight = FontWeight.Bold,
-                color = EmeraldDark
+                color = SageDeep
             ),
             textAlign = TextAlign.Center
         )
@@ -133,7 +133,7 @@ fun LoginScreen(
                 Icon(
                     imageVector = Icons.Default.Email,
                     contentDescription = "ایمیل",
-                    tint = EmeraldPrimary
+                    tint = SagePrimary
                 )
             },
             singleLine = true,
@@ -142,8 +142,8 @@ fun LoginScreen(
                 .testTag("email_input"),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = EmeraldPrimary,
-                focusedLabelColor = EmeraldPrimary
+                focusedBorderColor = SagePrimary,
+                focusedLabelColor = SagePrimary
             ),
             shape = RoundedCornerShape(14.dp)
         )
@@ -159,7 +159,7 @@ fun LoginScreen(
                 Icon(
                     imageVector = Icons.Default.Lock,
                     contentDescription = "رمز ورود",
-                    tint = EmeraldPrimary
+                    tint = SagePrimary
                 )
             },
             singleLine = true,
@@ -169,8 +169,8 @@ fun LoginScreen(
                 .fillMaxWidth()
                 .testTag("pin_input"),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = EmeraldPrimary,
-                focusedLabelColor = EmeraldPrimary
+                focusedBorderColor = SagePrimary,
+                focusedLabelColor = SagePrimary
             ),
             shape = RoundedCornerShape(14.dp)
         )
@@ -184,7 +184,7 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.SemiBold
                 ),
-                textAlign = TextAlign.Right,
+                textAlign = TextAlign.Start,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 8.dp)
@@ -198,7 +198,7 @@ fun LoginScreen(
         Button(
             onClick = { viewModel.login(email, pin) },
             colors = ButtonDefaults.buttonColors(
-                containerColor = EmeraldPrimary,
+                containerColor = SagePrimary,
                 contentColor = Color.White
             ),
             shape = RoundedCornerShape(16.dp),
@@ -266,7 +266,7 @@ fun LoginScreen(
                 Icon(
                     imageVector = Icons.Default.Person,
                     contentDescription = "گوگل",
-                    tint = EmeraldPrimary,
+                    tint = SagePrimary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
