@@ -15,7 +15,7 @@ import kotlin.math.sin
 class AmbientSoundSynthesizer {
     private var audioTrack: AudioTrack? = null
     private var job: Job? = null
-    private val scope = CoroutineScope(Dispatchers.Default)
+    private val scope = CoroutineScope(Dispatchers.IO)
     private var currentVolume = 0.7f
 
     fun startPlaying(type: String, volume: Float) {
@@ -106,26 +106,34 @@ class AmbientSoundSynthesizer {
 
     fun setVolume(volume: Float) {
         currentVolume = volume
-        audioTrack?.let {
-            try {
-                it.setVolume(volume)
-            } catch (e: Exception) {
-                e.printStackTrace()
+        scope.launch {
+            audioTrack?.let {
+                try {
+                    it.setVolume(volume)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             }
         }
     }
 
     fun stopPlaying() {
-        job?.cancel()
+        val activeJob = job
         job = null
-        try {
-            audioTrack?.apply {
-                stop()
-                release()
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
+        activeJob?.cancel()
+
+        val activeTrack = audioTrack
         audioTrack = null
+
+        scope.launch {
+            try {
+                activeTrack?.apply {
+                    stop()
+                    release()
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 }

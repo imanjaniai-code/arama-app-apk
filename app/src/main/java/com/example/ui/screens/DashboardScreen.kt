@@ -68,7 +68,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import com.example.R
+import com.arama.app.R
 import com.example.ui.theme.SageDeep
 import com.example.ui.theme.SagePrimary
 import com.example.ui.theme.SageTintBg

@@ -2,6 +2,7 @@ package com.example
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import com.arama.app.R
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -23,7 +24,7 @@ class ExampleRobolectricTest {
   @Test
   fun `resolve font resource`() {
     val context = ApplicationProvider.getApplicationContext<Context>()
-    val resId = R.font.vazirmatn_regular
+    val resId = R.font.yekanbakh_regular
     val stream = context.resources.openRawResource(resId)
     assertNotNull(stream)
     stream.close()

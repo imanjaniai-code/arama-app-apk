@@ -245,19 +245,20 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Google Sign-In Button
+        // Google Sign-In Button (Temporarily disabled for security reasons)
         val context = androidx.compose.ui.platform.LocalContext.current
         androidx.compose.material3.OutlinedButton(
-            onClick = { viewModel.signInWithGoogle(context) },
+            onClick = { /* Disabled for security */ },
+            enabled = false,
             shape = RoundedCornerShape(16.dp),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
                 .testTag("google_login_button"),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface
+                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
             ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline)
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -265,13 +266,13 @@ fun LoginScreen(
             ) {
                 Icon(
                     imageVector = Icons.Default.Person,
-                    contentDescription = "گوگل",
-                    tint = SagePrimary,
+                    contentDescription = "گوگل غیرفعال",
+                    tint = SagePrimary.copy(alpha = 0.38f),
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
                 Text(
-                    text = "ورود ایمن با حساب گوگل",
+                    text = "ورود با گوگل (موقتاً غیرفعال شده)",
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold

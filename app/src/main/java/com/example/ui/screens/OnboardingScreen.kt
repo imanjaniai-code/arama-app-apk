@@ -54,7 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.Image
 import androidx.compose.ui.res.painterResource
-import com.example.R
+import com.arama.app.R
 import com.example.ui.theme.SageDeep
 import com.example.ui.theme.SagePrimary
 import com.example.ui.theme.SageTintBg

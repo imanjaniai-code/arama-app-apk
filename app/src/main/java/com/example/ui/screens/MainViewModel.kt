@@ -269,13 +269,21 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         if (_onboardingPage.value < 2) {
             _onboardingPage.value += 1
         } else {
-            prefs.edit().putBoolean("onboarding_done", true).apply()
+            try {
+                prefs.edit().putBoolean("onboarding_done", true).apply()
+            } catch (t: Throwable) {
+                android.util.Log.e("MainViewModel", "Failed to save onboarding_done in next", t)
+            }
             navigate("login")
         }
     }
 
     fun onboardingSkip() {
-        prefs.edit().putBoolean("onboarding_done", true).apply()
+        try {
+            prefs.edit().putBoolean("onboarding_done", true).apply()
+        } catch (t: Throwable) {
+            android.util.Log.e("MainViewModel", "Failed to save onboarding_done in skip", t)
+        }
         navigate("login")
     }
 
@@ -370,6 +378,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun performSecureLocalLogin(email: String, pin: String, pinHash: String) {
+        val emailRegex = "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}$".toRegex()
+        if (email.isEmpty() || !emailRegex.matches(email)) {
+            _isTyping.value = false
+            _loginError.value = "نشانی ایمیل وارد شده نامعتبر است. لطفاً یک ایمیل معتبر وارد کنید."
+            return
+        }
+
         val storedHash = prefs.getString("user_pin_hash_$email", null)
         if (storedHash != null) {
             // Validate PIN hash
@@ -471,10 +486,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     _isTyping.value = false
                 }
             } catch (e: Throwable) {
-                // If credentials manager is canceled or unsupported in this emulator env, fallback to demo email account for flawless testing
-                android.util.Log.w("MainViewModel", "Google Sign-in failed or cancelled: ${e.message}. Using guest fallback.")
-                _loginError.value = null
-                completeAuthLogin("guest@arama.com")
+                android.util.Log.w("MainViewModel", "Google Sign-in failed or cancelled: ${e.message}")
+                _loginError.value = "ورود با گوگل انجام نشد. لطفاً دوباره تلاش کنید."
+                _isTyping.value = false
             }
         }
     }
@@ -678,6 +692,13 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun buildSystemInstruction(): String {
+        val latestMood = allMoods.value.maxByOrNull { it.timestamp }
+        val latestMoodPrepend = if (latestMood != null) {
+            "User's current mood today is: ${latestMood.moodLabel} (${latestMood.moodValue})${if (latestMood.note.isNotEmpty()) " with note: '${latestMood.note}'" else ""}. Respond accordingly.\n\n"
+        } else {
+            ""
+        }
+
         val currentName = _userName.value
         val nameInstruction = if (currentName.isNotEmpty()) {
             "نام کاربر «$currentName» است. در شروع یا لابلای صحبت حتماً او را صمیمانه با نام کوچک یا به صورت «$currentName عزیز» مخاطب قرار دهید."
@@ -695,7 +716,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             "کاربر هنوز حال و هوایی در بخش Mood Tracker ثبت نکرده است."
         }
 
-        return """
+        return latestMoodPrepend + """
             You are "Arama" (آراما), a deeply compassionate, empathetic, and wise AI mental wellness companion tailored for modern Iranian users. You possess the warmth of a dedicated human counselor and the intellectual precision of an advanced AI. 
 
             Your overarching purpose is to provide a non-judgmental, psychologically safe haven where users can unpack their heaviest emotions and find visual and mental calm.

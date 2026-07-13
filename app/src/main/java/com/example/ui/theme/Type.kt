@@ -8,7 +8,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.core.content.res.ResourcesCompat
-import com.example.R
+import com.arama.app.R
 
 // Custom Persian typography builder, 
 // featuring generous vertical breathing room (increased line-height) to render RTL characters beautifully.
@@ -72,18 +72,17 @@ val Typography = getTypography(FontFamily.Default)
 // Safe dynamic typography loading with fallback
 fun getSafeTypography(context: Context): Typography {
     val isLoadable = try {
-        ResourcesCompat.getFont(context, R.font.vazirmatn_regular) != null &&
-        ResourcesCompat.getFont(context, R.font.vazirmatn_medium) != null &&
-        ResourcesCompat.getFont(context, R.font.vazirmatn_bold) != null
+        ResourcesCompat.getFont(context, R.font.yekanbakh_regular) != null &&
+        ResourcesCompat.getFont(context, R.font.yekanbakh_bold) != null
     } catch (e: Throwable) {
         false
     }
 
     val fontFamily = if (isLoadable) {
         FontFamily(
-            Font(R.font.vazirmatn_regular, FontWeight.Normal),
-            Font(R.font.vazirmatn_medium, FontWeight.Medium),
-            Font(R.font.vazirmatn_bold, FontWeight.Bold)
+            Font(R.font.yekanbakh_regular, FontWeight.Normal),
+            Font(R.font.yekanbakh_regular, FontWeight.Medium),
+            Font(R.font.yekanbakh_bold, FontWeight.Bold)
         )
     } else {
         FontFamily.Default

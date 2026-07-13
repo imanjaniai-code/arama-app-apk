@@ -117,8 +117,17 @@ fun MainShellScreen(
                     }
                 }
 
-                // Placeholder or spacer to maintain clean topBar spacing
-                Spacer(modifier = Modifier.width(1.dp))
+                // Left side: Emergency Help Button
+                androidx.compose.material3.IconButton(
+                    onClick = { viewModel.setEmergencyVisible(true) },
+                    modifier = Modifier.testTag("emergency_button_shell")
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.NotificationImportant,
+                        contentDescription = "کمک اضطراری",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
             }
         },
         bottomBar = {

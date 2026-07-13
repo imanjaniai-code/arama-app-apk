@@ -40,6 +40,23 @@ import com.example.ui.theme.SageTintBg
 fun BiometricUnlockScreen(
     viewModel: MainViewModel
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val activity = context as? androidx.fragment.app.FragmentActivity
+    val isBiometricAvailable = androidx.compose.runtime.remember(context) { BiometricHelper.isBiometricAvailable(context) }
+
+    // Automatically trigger biometric authentication when screen loads if available
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        if (activity != null && isBiometricAvailable) {
+            BiometricHelper.showBiometricPrompt(
+                activity = activity,
+                onSuccess = {
+                    viewModel.unlockWithBiometric()
+                },
+                onError = { /* Logged or shown in UI */ }
+            )
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -78,7 +95,11 @@ fun BiometricUnlockScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "جهت ورود به برنامه و محافظت از اطلاعات سلامت روان خود، اثر انگشت یا رمز عبور خود را تایید کنید.",
+            text = if (isBiometricAvailable) {
+                "جهت ورود به برنامه و محافظت از اطلاعات سلامت روان خود، اثر انگشت یا رمز عبور خود را تایید کنید."
+            } else {
+                "حسگر اثر انگشت روی این دستگاه غیرفعال یا تنظیم نشده است. لطفاً برای ورود راحت از دکمه زیر استفاده کنید."
+            },
             style = MaterialTheme.typography.bodyMedium.copy(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 22.sp
@@ -93,16 +114,29 @@ fun BiometricUnlockScreen(
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .background(SagePrimary.copy(alpha = 0.1f), shape = CircleShape)
+                .background(
+                    if (isBiometricAvailable) SagePrimary.copy(alpha = 0.1f) else Color.LightGray.copy(alpha = 0.1f),
+                    shape = CircleShape
+                )
                 .clip(CircleShape)
-                .clickable { viewModel.unlockWithBiometric() }
+                .clickable(enabled = isBiometricAvailable) {
+                    if (activity != null) {
+                        BiometricHelper.showBiometricPrompt(
+                            activity = activity,
+                            onSuccess = { viewModel.unlockWithBiometric() },
+                            onError = { /* Logged or shown in UI */ }
+                        )
+                    } else {
+                        viewModel.unlockWithBiometric()
+                    }
+                }
                 .testTag("fingerprint_sensor_button"),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = Icons.Default.Fingerprint,
                 contentDescription = "اثر انگشت",
-                tint = SagePrimary,
+                tint = if (isBiometricAvailable) SagePrimary else Color.Gray,
                 modifier = Modifier.size(64.dp)
             )
         }
@@ -110,10 +144,10 @@ fun BiometricUnlockScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "برای تایید هویت روی حسگر ضربه بزنید",
+            text = if (isBiometricAvailable) "برای تایید هویت روی حسگر ضربه بزنید" else "حسگر غیرفعال است",
             style = MaterialTheme.typography.bodySmall.copy(
                 fontWeight = FontWeight.SemiBold,
-                color = SagePrimary
+                color = if (isBiometricAvailable) SagePrimary else Color.Gray
             ),
             textAlign = TextAlign.Center
         )
