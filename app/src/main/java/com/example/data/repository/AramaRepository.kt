@@ -20,6 +20,10 @@ class AramaRepository(private val aramaDao: AramaDao) {
         return aramaDao.insertChatMessage(message)
     }
 
+    suspend fun deleteChatMessageById(id: Int) {
+        aramaDao.deleteChatMessageById(id)
+    }
+
     suspend fun insertSecurityLog(log: SecurityLogEntity) {
         aramaDao.insertSecurityLog(log)
     }

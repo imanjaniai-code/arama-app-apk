@@ -25,6 +25,9 @@ interface AramaDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChatMessage(message: ChatEntity): Long
 
+    @Query("DELETE FROM chat_messages WHERE id = :id")
+    suspend fun deleteChatMessageById(id: Int)
+
     @Query("DELETE FROM chat_messages")
     suspend fun deleteAllChatMessages()
 

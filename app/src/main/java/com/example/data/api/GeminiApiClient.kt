@@ -5,10 +5,15 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import java.util.concurrent.TimeUnit
 
 object GeminiApiClient {
@@ -69,6 +74,7 @@ object GeminiApiClient {
 
         // Map the user request mode to the best available official model name
         val modelName = when (modelMode) {
+            "fast" -> "gemini-3.1-flash-lite-preview"
             "complex" -> "gemini-3.1-pro-preview"
             else -> "gemini-3.5-flash"
         }
@@ -134,4 +140,97 @@ object GeminiApiClient {
             "خطا در برقراری ارتباط با سرور هوش مصنوعی آراما. لطفاً اتصال اینترنت خود را بررسی کنید."
         }
     }
+
+    fun generateResponseStream(
+        prompt: String,
+        history: List<Content> = emptyList(),
+        systemInstructionText: String,
+        modelMode: String = "general"
+    ): Flow<String> = flow {
+        val apiKey = com.arama.app.BuildConfig.GEMINI_API_KEY
+
+        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
+            Log.e(TAG, "Gemini API key is missing or using placeholder")
+            emit("خطا: کلید API برای پیام‌رسان آراما در تنظیمات برنامه ثبت نشده است. لطفاً کلید معتبر را در بخش Secrets اضافه کنید.")
+            return@flow
+        }
+
+        val modelName = when (modelMode) {
+            "fast" -> "gemini-3.1-flash-lite-preview"
+            "complex" -> "gemini-3.1-pro-preview"
+            else -> "gemini-3.5-flash"
+        }
+
+        val contents = history.toMutableList()
+        contents.add(
+            Content(
+                role = "user",
+                parts = listOf(Part(text = prompt))
+            )
+        )
+
+        val systemInstruction = if (systemInstructionText.isNotEmpty()) {
+            Content(parts = listOf(Part(text = systemInstructionText)))
+        } else {
+            null
+        }
+
+        val geminiRequest = GeminiRequest(
+            contents = contents,
+            systemInstruction = systemInstruction,
+            generationConfig = GenerationConfig(temperature = 0.7f)
+        )
+
+        val requestAdapter = moshi.adapter(GeminiRequest::class.java)
+        val jsonRequest = requestAdapter.toJson(geminiRequest)
+
+        val requestBody = jsonRequest.toRequestBody("application/json; charset=utf-8".toMediaType())
+        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:streamGenerateContent?key=$apiKey&alt=sse"
+
+        val request = Request.Builder()
+            .url(url)
+            .post(requestBody)
+            .build()
+
+        try {
+            val response = okHttpClient.newCall(request).execute()
+            if (!response.isSuccessful) {
+                val errBody = response.body?.string() ?: ""
+                Log.e(TAG, "Gemini Stream API call failed with code: ${response.code}, body: $errBody")
+                emit("Error: ${response.code}")
+                return@flow
+            }
+
+            val source = response.body?.source()
+            if (source == null) {
+                emit("Error: Empty response stream")
+                return@flow
+            }
+
+            val reader = BufferedReader(InputStreamReader(source.inputStream(), "UTF-8"))
+            val responseAdapter = moshi.adapter(GeminiResponse::class.java)
+
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                val trimmed = line?.trim() ?: continue
+                if (trimmed.startsWith("data:")) {
+                    val dataJson = trimmed.substring(5).trim()
+                    if (dataJson.isEmpty() || dataJson == "[DONE]") continue
+                    try {
+                        val chunkResponse = responseAdapter.fromJson(dataJson)
+                        val textPart = chunkResponse?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                        if (textPart != null) {
+                            emit(textPart)
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to parse stream chunk: $dataJson", e)
+                    }
+                }
+            }
+            response.close()
+        } catch (e: Exception) {
+            Log.e(TAG, "Network call to Gemini API failed during streaming", e)
+            emit("Error: ${e.message ?: "اتصال اینترنت قطع است"}")
+        }
+    }.flowOn(Dispatchers.IO)
 }

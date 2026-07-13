@@ -80,6 +80,7 @@ fun ChatScreen(
     val userName by viewModel.userName.collectAsState()
     var nameInputText by remember { mutableStateOf("") }
     val messages by viewModel.chatMessages.collectAsState()
+    val visibleMessages = remember(messages) { messages.filter { it.text.trim().isNotEmpty() } }
     val haptic = LocalHapticFeedback.current
     val isTyping by viewModel.isTyping.collectAsState()
     var inputTexValue by remember { mutableStateOf("") }
@@ -87,9 +88,9 @@ fun ChatScreen(
     val listState = rememberLazyListState()
 
     // Scroll to bottom when new messages arrive or typing starts
-    LaunchedEffect(messages.size, isTyping) {
-        if (messages.isNotEmpty()) {
-            listState.animateScrollToItem(messages.size - 1)
+    LaunchedEffect(visibleMessages.size, isTyping) {
+        if (visibleMessages.isNotEmpty()) {
+            listState.animateScrollToItem(visibleMessages.size - 1)
         }
     }
 
@@ -180,7 +181,7 @@ fun ChatScreen(
             }
         } else {
             // Welcome and Warning banner if conversation is empty
-            if (messages.isEmpty()) {
+            if (visibleMessages.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .weight(1f)
@@ -263,7 +264,7 @@ fun ChatScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(messages) { message ->
+                    items(visibleMessages) { message ->
                         ChatMessageBubble(message = message, onRetry = { viewModel.retryMessage(it) })
                     }
 

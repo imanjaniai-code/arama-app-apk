@@ -17,7 +17,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.filled.InsertChart
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.NotificationImportant
@@ -144,7 +144,7 @@ fun MainShellScreen(
                     onClick = { viewModel.navigate("chat") },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.Chat,
+                            imageVector = Icons.AutoMirrored.Filled.Chat,
                             contentDescription = "گفتگو"
                         )
                     },

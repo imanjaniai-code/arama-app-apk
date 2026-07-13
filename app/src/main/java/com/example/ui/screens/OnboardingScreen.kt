@@ -11,7 +11,9 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.with
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,8 +30,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
@@ -67,18 +71,6 @@ fun OnboardingScreen(
 ) {
     val page by viewModel.onboardingPage.collectAsState()
 
-    val title = when (page) {
-        0 -> "به آراما خوش آمدید"
-        1 -> "مکالمه ایمن و بی‌قضاوت"
-        else -> "چک‌این حال روحی"
-    }
-
-    val description = when (page) {
-        0 -> "همراه هوشمند و دلسوز شما در مسیر آرامش و بهبود سلامت روان. آراما همواره در کنار شماست تا با گوش دادن صمیمانه، خستگی‌های روزانه را تسکین دهد."
-        1 -> "هر زمان مایل بودی گفتگو کن. به لطف هوش مصنوعی پیشرفته جمینای و حریم خصوصی پیش‌فرض، گفتگوی شما کاملاً محرمانه و در حافظه محلی تلفن شما نگهداری می‌شود."
-        else -> "احوال روزانه خود را در چند ثانیه بسنجید. روند تغییرات روحی را در قالب یک نمودار صمیمی و آرامش‌بخش، بدون استرس و فشارهای ملامت‌گرانه دنبال کنید."
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -93,7 +85,7 @@ fun OnboardingScreen(
         // Top skipping area
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start
+            horizontalArrangement = Arrangement.End
         ) {
             TextButton(
                 onClick = { viewModel.onboardingSkip() },
@@ -109,52 +101,76 @@ fun OnboardingScreen(
             }
         }
 
-        // Illustration / Banner Area (Custom vector drawing with canvas for highly stylized aesthetic)
-        Box(
+        // Scrollable content area
+        Column(
             modifier = Modifier
+                .weight(1f)
                 .fillMaxWidth()
-                .fillMaxHeight(0.45f)
-                .clip(RoundedCornerShape(24.dp))
-                .background(SageTintBg)
-                .padding(24.dp),
-            contentAlignment = Alignment.Center
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            OnboardingArtwork(page = page)
-        }
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        // Content Area (Transition animation)
-        AnimatedContent(
-            targetState = page,
-            transitionSpec = {
-                fadeIn(animationSpec = tween(300)) with fadeOut(animationSpec = tween(300))
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) { targetPage ->
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Illustration / Banner Area (Custom vector drawing with canvas for highly stylized aesthetic)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(220.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(SageTintBg)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.displayLarge.copy(
-                        fontSize = 26.sp,
-                        color = SageDeep,
-                        fontWeight = FontWeight.Bold
-                    ),
-                    textAlign = TextAlign.Center
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        lineHeight = 28.sp,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 8.dp)
-                )
+                OnboardingArtwork(page = page)
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Content Area (Transition animation)
+            AnimatedContent(
+                targetState = page,
+                transitionSpec = {
+                    (slideInHorizontally(initialOffsetX = { it }) + fadeIn()) togetherWith 
+                    (slideOutHorizontally(targetOffsetX = { -it }) + fadeOut())
+                },
+                modifier = Modifier.fillMaxWidth(),
+                label = "onboarding_text"
+            ) { targetPage ->
+                val animatedTitle = when (targetPage) {
+                    0 -> "به آراما خوش آمدید"
+                    1 -> "مکالمه ایمن و بی‌قضاوت"
+                    else -> "چک‌این حال روحی"
+                }
+
+                val animatedDescription = when (targetPage) {
+                    0 -> "همراه هوشمند و دلسوز شما در مسیر آرامش و بهبود سلامت روان. آراما همواره در کنار شماست تا با گوش دادن صمیمانه، خستگی‌های روزانه را تسکین دهد."
+                    1 -> "هر زمان مایل بودی گفتگو کن. به لطف هوش مصنوعی پیشرفته جمینای و حریم خصوصی پیش‌فرض، گفتگوی شما کاملاً محرمانه و در حافظه محلی تلفن شما نگهداری می‌شود."
+                    else -> "احوال روزانه خود را در چند ثانیه بسنجید. روند تغییرات روحی را در قالب یک نمودار صمیمی و آرامش‌بخش، بدون استرس و فشارهای ملامت‌گرانه دنبال کنید."
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = animatedTitle,
+                        style = MaterialTheme.typography.displayLarge.copy(
+                            fontSize = 24.sp,
+                            color = SageDeep,
+                            fontWeight = FontWeight.Bold
+                        ),
+                        textAlign = TextAlign.Center
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = animatedDescription,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            lineHeight = 26.sp,
+                            color = MaterialTheme.colorScheme.onBackground
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = 8.dp)
+                    )
+                }
             }
         }
 
@@ -184,11 +200,14 @@ fun OnboardingScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             // Action Buttons
             Button(
-                onClick = { viewModel.onboardingNext() },
+                onClick = {
+                    android.util.Log.d("OnboardingScreen", "Next button clicked")
+                    viewModel.onboardingNext()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)

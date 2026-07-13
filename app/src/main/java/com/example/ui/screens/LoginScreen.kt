@@ -1,10 +1,15 @@
 package com.example.ui.screens
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -13,33 +18,48 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Spa
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,9 +71,20 @@ import com.example.ui.theme.SageTintBg
 fun LoginScreen(
     viewModel: MainViewModel
 ) {
-    var email by remember { mutableStateOf("") }
-    var pin by remember { mutableStateOf("") }
+    val phone by viewModel.loginPhone.collectAsState()
+    val otp by viewModel.loginOtp.collectAsState()
+    val loginStep by viewModel.loginStep.collectAsState()
+    val countdown by viewModel.otpCountdown.collectAsState()
+    val generatedOtp by viewModel.generatedOtp.collectAsState()
     val loginError by viewModel.loginError.collectAsState()
+    val isTyping by viewModel.isTyping.collectAsState()
+
+    // Local profile setup states
+    var nameInput by remember { mutableStateOf("") }
+    var pinInput by remember { mutableStateOf("") }
+    var confirmPinInput by remember { mutableStateOf("") }
+    var isPinVisible by remember { mutableStateOf(false) }
+    var localError by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -62,11 +93,13 @@ fun LoginScreen(
             .statusBarsPadding()
             .navigationBarsPadding()
             .padding(24.dp)
+            .verticalScroll(rememberScrollState())
             .testTag("login_root"),
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Logo Lockup
+        // Logo Lockup (Elegant, aligned beautifully)
+        Spacer(modifier = Modifier.height(28.dp))
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.fillMaxWidth()
@@ -75,13 +108,13 @@ fun LoginScreen(
                 imageVector = Icons.Default.Spa,
                 contentDescription = "آیکون آراما",
                 tint = SagePrimary,
-                modifier = Modifier.size(72.dp)
+                modifier = Modifier.size(80.dp)
             )
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = "آراما",
                 style = MaterialTheme.typography.displayLarge.copy(
-                    fontSize = 36.sp,
+                    fontSize = 38.sp,
                     color = SageDeep,
                     fontWeight = FontWeight.Black
                 ),
@@ -90,7 +123,7 @@ fun LoginScreen(
             Text(
                 text = "arama",
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     color = SagePrimary,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
@@ -99,186 +132,591 @@ fun LoginScreen(
             )
         }
 
-        Spacer(modifier = Modifier.height(36.dp))
+        Spacer(modifier = Modifier.height(48.dp))
 
-        // Title and intro
-        Text(
-            text = "ورود یا ثبت‌نام سریع",
-            style = MaterialTheme.typography.titleLarge.copy(
-                fontWeight = FontWeight.Bold,
-                color = SageDeep
-            ),
-            textAlign = TextAlign.Center
-        )
-        Spacer(modifier = Modifier.height(8.dp))
-        Text(
-            text = "برای شخصی‌سازی و محافظت محلی از پیام‌هایتان، لطفاً ایمیل خود و یک رمز عبور دلخواه ۴ رقمی وارد کنید.",
-            style = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                lineHeight = 22.sp
-            ),
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = 8.dp)
-        )
-
-        Spacer(modifier = Modifier.height(28.dp))
-
-        // Form Fields
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            label = { Text("نشانی ایمیل") },
-            placeholder = { Text("example@domain.com") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Email,
-                    contentDescription = "ایمیل",
-                    tint = SagePrimary
-                )
+        // Animated transitions between Phone, OTP, and Profile Setup states
+        AnimatedContent(
+            targetState = loginStep,
+            transitionSpec = {
+                fadeIn() togetherWith fadeOut()
             },
-            singleLine = true,
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("email_input"),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SagePrimary,
-                focusedLabelColor = SagePrimary
-            ),
-            shape = RoundedCornerShape(14.dp)
-        )
+            label = "LoginStates"
+        ) { step ->
+            when (step) {
+                LoginStep.PHONE_INPUT -> {
+                    // State 1: Enter Phone Number
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "ورود یا ثبت‌نام",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = SageDeep,
+                                fontSize = 22.sp
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "برای شروع گفتگو و شخصی‌سازی تمرینات آرامش، لطفا شماره موبایل خود را وارد کنید تا کد فعال‌سازی برایتان ارسال شود.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 24.sp
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(28.dp))
 
-        OutlinedTextField(
-            value = pin,
-            onValueChange = { if (it.length <= 6) pin = it },
-            label = { Text("رمز عبور یا کد ورود") },
-            placeholder = { Text("حداقل ۴ رقم") },
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "رمز ورود",
-                    tint = SagePrimary
-                )
-            },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-            modifier = Modifier
-                .fillMaxWidth()
-                .testTag("pin_input"),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = SagePrimary,
-                focusedLabelColor = SagePrimary
-            ),
-            shape = RoundedCornerShape(14.dp)
-        )
+                        OutlinedTextField(
+                            value = phone,
+                            onValueChange = { viewModel.setLoginPhone(it) },
+                            label = { Text("شماره موبایل") },
+                            placeholder = { Text("مثال: ۰۹۱۲۳۴۵۶۷۸۹") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.PhoneAndroid,
+                                    contentDescription = "شماره موبایل",
+                                    tint = SagePrimary
+                                )
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("phone_input"),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { viewModel.sendOtpCode() }
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
 
-        // Error message if any
-        if (loginError != null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = loginError!!,
-                style = MaterialTheme.typography.bodyMedium.copy(
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.SemiBold
-                ),
-                textAlign = TextAlign.Start,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-                    .testTag("login_error_text")
-            )
-        }
+                        if (loginError != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = loginError!!,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("login_error_text")
+                            )
+                        }
 
-        Spacer(modifier = Modifier.height(32.dp))
+                        Spacer(modifier = Modifier.height(32.dp))
 
-        // CTA Submit Button
-        Button(
-            onClick = { viewModel.login(email, pin) },
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SagePrimary,
-                contentColor = Color.White
-            ),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag("submit_login_button")
-        ) {
-            Text(
-                text = "ورود و شروع گفت‌وگو",
-                style = MaterialTheme.typography.labelLarge.copy(
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            )
-        }
+                        Button(
+                            onClick = { viewModel.sendOtpCode() },
+                            enabled = !isTyping,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SagePrimary,
+                                contentColor = Color.White
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .testTag("submit_phone_button")
+                        ) {
+                            if (isTyping) {
+                                CircularProgressIndicator(
+                                    color = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            } else {
+                                Text(
+                                    text = "ارسال کد تأیید",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+                LoginStep.OTP_INPUT -> {
+                    // State 2: Enter Verification Code (OTP)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "تأیید شماره موبایل",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = SageDeep,
+                                fontSize = 22.sp
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        
+                        // Display current phone with an elegant edit action
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center,
+                            modifier = Modifier
+                                .background(SageTintBg, shape = RoundedCornerShape(12.dp))
+                                .padding(horizontal = 14.dp, vertical = 6.dp)
+                        ) {
+                            Text(
+                                text = "کد تأیید برای ${phone.toPersianDigits()} ارسال شد",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = SageDeep,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            IconButton(
+                                onClick = { viewModel.cancelOtpFlow() },
+                                modifier = Modifier.size(24.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "ویرایش شماره",
+                                    tint = SagePrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
 
-        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(24.dp))
 
-        // Divider
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            androidx.compose.foundation.layout.Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
-            )
-            Text(
-                text = "یا",
-                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
-            androidx.compose.foundation.layout.Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .height(1.dp)
-                    .background(MaterialTheme.colorScheme.outlineVariant)
-            )
-        }
+                        OutlinedTextField(
+                            value = otp,
+                            onValueChange = { if (it.length <= 5) viewModel.setLoginOtp(it) },
+                            label = { Text("کد تأیید ۵ رقمی") },
+                            placeholder = { Text("مثال: ۱۲۳۴۵") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "کد تأیید",
+                                    tint = SagePrimary
+                                )
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("otp_input"),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Number,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = { viewModel.verifyOtpCode() }
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
 
-        Spacer(modifier = Modifier.height(16.dp))
+                        // Friendly visual hint showing the simulated OTP (for direct, high-fidelity experience)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = SageTintBg),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(14.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    text = "پیامک فعال‌سازی آراما (ارسال واقعی + شبیه‌ساز کمکی)",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = SagePrimary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "کد تأیید شما: ${generatedOtp.toPersianDigits()}",
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = SageDeep,
+                                        fontWeight = FontWeight.Black,
+                                        fontSize = 18.sp,
+                                        letterSpacing = 1.sp
+                                    )
+                                )
+                            }
+                        }
 
-        // Google Sign-In Button (Temporarily disabled for security reasons)
-        val context = androidx.compose.ui.platform.LocalContext.current
-        androidx.compose.material3.OutlinedButton(
-            onClick = { /* Disabled for security */ },
-            enabled = false,
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .testTag("google_login_button"),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            ),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.12f))
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Person,
-                    contentDescription = "گوگل غیرفعال",
-                    tint = SagePrimary.copy(alpha = 0.38f),
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(
-                    text = "ورود با گوگل (موقتاً غیرفعال شده)",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                )
+                        if (loginError != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = loginError!!,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("login_error_text")
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(20.dp))
+
+                        // Countdown text & Resend Option
+                        if (countdown > 0) {
+                            val minutes = countdown / 60
+                            val seconds = countdown % 60
+                            val timeStr = String.format("%02d:%02d", minutes, seconds).toPersianDigits()
+                            Text(
+                                text = "ارسال مجدد کد پس از $timeStr ثانیه",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        } else {
+                            TextButton(
+                                onClick = { viewModel.sendOtpCode() },
+                                modifier = Modifier.height(48.dp)
+                            ) {
+                                Text(
+                                    text = "ارسال مجدد کد تأیید",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = SagePrimary,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { viewModel.cancelOtpFlow() },
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                                    .testTag("back_button"),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = SagePrimary
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SagePrimary)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "بازگشت",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "بازگشت",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = { viewModel.verifyOtpCode() },
+                                enabled = !isTyping,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SagePrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .weight(1.5f)
+                                    .height(56.dp)
+                                    .testTag("submit_otp_button")
+                            ) {
+                                if (isTyping) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "تأیید و ورود",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                LoginStep.PROFILE_SETUP -> {
+                    // State 3: Choose Name and Password/PIN (تکمیل پروفایل)
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "تنظیم مشخصات کاربری",
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = SageDeep,
+                                fontSize = 22.sp
+                            ),
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = "نام و رمز عبور (پین یا پسورد دلخواه) خود را برای فعال‌سازی ایمن و اختصاصی حساب آراما تعیین فرمایید.",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                lineHeight = 24.sp
+                            ),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 8.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(24.dp))
+
+                        // Name input field
+                        OutlinedTextField(
+                            value = nameInput,
+                            onValueChange = { nameInput = it; localError = null },
+                            label = { Text("نام و نام‌خانوادگی") },
+                            placeholder = { Text("مثال: ایمان جانی") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "نام",
+                                    tint = SagePrimary
+                                )
+                            },
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("name_setup_input"),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Text,
+                                imeAction = ImeAction.Next
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Password / PIN input field
+                        OutlinedTextField(
+                            value = pinInput,
+                            onValueChange = { pinInput = it; localError = null },
+                            label = { Text("رمز عبور (حداقل ۴ کاراکتر)") },
+                            placeholder = { Text("مثال: ۱۲۳۴") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "رمز عبور",
+                                    tint = SagePrimary
+                                )
+                            },
+                            trailingIcon = {
+                                IconButton(onClick = { isPinVisible = !isPinVisible }) {
+                                    Icon(
+                                        imageVector = if (isPinVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                        contentDescription = "نمایش رمز عبور",
+                                        tint = SagePrimary
+                                    )
+                                }
+                            },
+                            visualTransformation = if (isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("pin_setup_input"),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Next
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        // Confirm Password / PIN input field
+                        OutlinedTextField(
+                            value = confirmPinInput,
+                            onValueChange = { confirmPinInput = it; localError = null },
+                            label = { Text("تکرار رمز عبور") },
+                            placeholder = { Text("رمز را دوباره وارد کنید") },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Default.Lock,
+                                    contentDescription = "تأیید رمز عبور",
+                                    tint = SagePrimary
+                                )
+                            },
+                            visualTransformation = if (isPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            singleLine = true,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("confirm_pin_setup_input"),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Password,
+                                imeAction = ImeAction.Done
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onDone = {
+                                    if (nameInput.trim().isEmpty()) {
+                                        localError = "لطفاً نام و نام‌خانوادگی خود را وارد کنید."
+                                    } else if (pinInput.length < 4) {
+                                        localError = "رمز عبور باید حداقل ۴ رقم/کاراکتر باشد."
+                                    } else if (pinInput != confirmPinInput) {
+                                        localError = "تکرار رمز عبور مطابقت ندارد."
+                                    } else {
+                                        viewModel.registerAndLogin(nameInput, pinInput)
+                                    }
+                                }
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = SagePrimary,
+                                focusedLabelColor = SagePrimary
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+
+                        // Error messages
+                        val activeError = localError ?: loginError
+                        if (activeError != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = activeError,
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = MaterialTheme.colorScheme.error,
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("login_error_text")
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(32.dp))
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { viewModel.cancelOtpFlow() },
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(56.dp)
+                                    .testTag("profile_setup_back_button"),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = SagePrimary
+                                ),
+                                border = androidx.compose.foundation.BorderStroke(1.dp, SagePrimary)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.Center
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "انصراف",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        text = "انصراف",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 15.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                }
+                            }
+
+                            Button(
+                                onClick = {
+                                    if (nameInput.trim().isEmpty()) {
+                                        localError = "لطفاً نام و نام‌خانوادگی خود را وارد کنید."
+                                    } else if (pinInput.length < 4) {
+                                        localError = "رمز عبور باید حداقل ۴ رقم/کاراکتر باشد."
+                                    } else if (pinInput != confirmPinInput) {
+                                        localError = "تکرار رمز عبور مطابقت ندارد."
+                                    } else {
+                                        viewModel.registerAndLogin(nameInput, pinInput)
+                                    }
+                                },
+                                enabled = !isTyping,
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = SagePrimary,
+                                    contentColor = Color.White
+                                ),
+                                shape = RoundedCornerShape(16.dp),
+                                modifier = Modifier
+                                    .weight(1.5f)
+                                    .height(56.dp)
+                                    .testTag("submit_profile_setup_button")
+                            ) {
+                                if (isTyping) {
+                                    CircularProgressIndicator(
+                                        color = Color.White,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "تکمیل و ورود",
+                                        style = MaterialTheme.typography.labelLarge.copy(
+                                            fontSize = 16.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }
+}
+
+
+// Utility extension function to translate English digits to beautiful Persian digits
+fun String.toPersianDigits(): String {
+    var result = this
+    val persianDigits = arrayOf("۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹")
+    for (i in 0..9) {
+        result = result.replace(i.toString(), persianDigits[i])
+    }
+    return result
 }

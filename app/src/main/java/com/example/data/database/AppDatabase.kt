@@ -29,7 +29,7 @@ abstract class AppDatabase : RoomDatabase() {
                     try {
                         val db = SQLiteDatabase.openDatabase(
                             dbFile.absolutePath,
-                            passphrase.map { it.toChar() }.toCharArray(),
+                            passphrase.map { it.toInt().toChar() }.toCharArray(),
                             null,
                             SQLiteDatabase.OPEN_READWRITE
                         )
