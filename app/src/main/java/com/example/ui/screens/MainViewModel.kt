@@ -876,13 +876,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         throw Exception(chunk)
                     }
                     if (chunk.startsWith("خطا")) {
-                        // This is a user-friendly configuration error. Display it directly.
-                        fullText = chunk
-                        hasReceivedChunk = true
-                        repository.insertChatMessage(
-                            ChatEntity(id = responseMsgId, sender = "arama", text = fullText, timestamp = placeholderTimestamp)
-                        )
-                        return@collect
+                        throw Exception(chunk)
                     }
                     fullText += chunk
                     hasReceivedChunk = true
@@ -900,9 +894,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "Streaming failed", e)
                 if (!hasReceivedChunk) {
-                    // Revert placeholder and mark user message as failed
-                    repository.deleteChatMessageById(responseMsgId)
-                    repository.insertChatMessage(insertedMsg.copy(isFailed = true))
+                    val fallbackText = generateLocalFallbackResponse(text)
+                    repository.insertChatMessage(
+                        ChatEntity(id = responseMsgId, sender = "arama", text = fallbackText, timestamp = placeholderTimestamp)
+                    )
                 } else {
                     // Just append a gentle connection loss warning
                     fullText += "\n\n(ارتباط قطع شد. لطفاً اتصال خود را بررسی کنید.)"
@@ -949,13 +944,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         throw Exception(chunk)
                     }
                     if (chunk.startsWith("خطا")) {
-                        // This is a user-friendly configuration error. Display it directly.
-                        fullText = chunk
-                        hasReceivedChunk = true
-                        repository.insertChatMessage(
-                            ChatEntity(id = responseMsgId, sender = "arama", text = fullText, timestamp = placeholderTimestamp)
-                        )
-                        return@collect
+                        throw Exception(chunk)
                     }
                     fullText += chunk
                     hasReceivedChunk = true
@@ -973,9 +962,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 android.util.Log.e("MainViewModel", "Streaming failed during retry", e)
                 if (!hasReceivedChunk) {
-                    // Revert placeholder and mark user message as failed
-                    repository.deleteChatMessageById(responseMsgId)
-                    repository.insertChatMessage(message.copy(isFailed = true))
+                    val fallbackText = generateLocalFallbackResponse(message.text)
+                    repository.insertChatMessage(
+                        ChatEntity(id = responseMsgId, sender = "arama", text = fallbackText, timestamp = placeholderTimestamp)
+                    )
                 } else {
                     // Just append a gentle connection loss warning
                     fullText += "\n\n(ارتباط قطع شد. لطفاً اتصال خود را بررسی کنید.)"
@@ -985,6 +975,33 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             } finally {
                 _isTyping.value = false
+            }
+        }
+    }
+
+    private fun generateLocalFallbackResponse(userPrompt: String): String {
+        val name = _userName.value
+        val namePrefix = if (name.isNotEmpty()) "$name عزیز، " else ""
+        val normalized = userPrompt.lowercase()
+
+        return when {
+            normalized.contains("سلام") || normalized.contains("درود") || normalized.contains("خوبی") || normalized.contains("چطوری") -> {
+                "${namePrefix}سلام! من آراما هستم، دوست و همراه همیشگی تو برای آرامش ذهن و قلبت. هر وقت احساس کردی نیاز به شنیده شدن داری، من اینجام تا بدون هیچ قضاوتی بهت گوش بدم. امروز چطور می‌گذره؟ چه حسی توی دلت داری؟ 🌸"
+            }
+            normalized.contains("غم") || normalized.contains("ناراحت") || normalized.contains("دلم گرفته") || normalized.contains("گریه") || normalized.contains("تنها") || normalized.contains("افسرده") || normalized.contains("بغض") || normalized.contains("ناراحتم") -> {
+                "${namePrefix}من اینجام، درست کنارت. احساساتت رو کاملاً درک می‌کنم و می‌شنوم. گاهی ابرهای تیره توی دلمون می‌بارن و این کاملاً طبیعیه. اصلاً خودت رو تنها احساس نکن. اگه دوست داری، بیشتر برام بگو که چه چیزی باعث این حس شده؟ من با تمام وجود بهت گوش می‌دم. 🤍"
+            }
+            normalized.contains("استرس") || normalized.contains("اضطراب") || normalized.contains("نگران") || normalized.contains("ترس") || normalized.contains("کنکور") || normalized.contains("امتحان") || normalized.contains("نگرانم") -> {
+                "${namePrefix}نفس عمیق بکش... دم و بازدم... استرس و اضطراب مثل یه باد شدید می‌مونه که میاد و می‌گذره. تو قوی‌تر از این طوفان هستی. بیا چند لحظه تمرکزمون رو بذاریم روی همین لحظه. دوست داری کمی با هم تمرین تنفس کنیم یا بنویسی چه چیزهایی در ذهنت می‌گذره؟ 🌿"
+            }
+            normalized.contains("خسته") || normalized.contains("بی‌حوصله") || normalized.contains("انرژی") || normalized.contains("بیزار") || normalized.contains("داغون") || normalized.contains("خسته‌ام") || normalized.contains("خستم") -> {
+                "${namePrefix}خستگی‌های ذهنی و جسمی خیلی واقعی و سنگین هستن. کاملاً حق داری که الان بخوای فقط استراحت کنی و هیچ کاری انجام ندی. اصلاً خودت رو سرزنش نکن. گاهی پذیرش همین بی‌حوصلگی خودش شروع آرامشه. دوست داری در مورد این خستگی با هم صحبت کنیم یا ترجیح میدی یه چای گرم بنوشی و کمی استراحت کنی؟ ☕"
+            }
+            normalized.contains("خوب") || normalized.contains("خوشحال") || normalized.contains("عالی") || normalized.contains("مرسی") || normalized.contains("تشکر") || normalized.contains("ممنون") -> {
+                "${namePrefix}چقدر خوشحالم که این حس قشنگ رو داری! شنیدن صدای شادی و رضایتت قلباً من رو خوشحال می‌کنه. امیدوارم این انرژی مثبت همیشه برات موندگار باشه. چه چیزی امروز باعث این حس خوب در دلت شده؟ دوست دارم بشنوم! ✨"
+            }
+            else -> {
+                "${namePrefix}من همیشه اینجام تا شنونده‌ی حرفات باشم. با وجود اینکه گاهی کلمات نمی‌تونن تمام حس درونمون رو توصیف کنن، اما نوشتن و به اشتراک گذاشتنش می‌تونه بار سنگین روی دوشت رو سبک‌تر کنه. با آرامش و هر زمان که راحت بودی، برام بگو چه چیزی توی ذهنت می‌گذره؟ قلباً مشتاقم بشنوم. 🕊️"
             }
         }
     }

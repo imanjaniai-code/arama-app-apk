@@ -27,19 +27,18 @@ abstract class AppDatabase : RoomDatabase() {
                 val dbFile = context.getDatabasePath("arama_database")
                 if (dbFile.exists()) {
                     try {
-                        val db = SQLiteDatabase.openDatabase(
+                        val db = SQLiteDatabase.openOrCreateDatabase(
                             dbFile.absolutePath,
-                            passphrase.map { it.toInt().toChar() }.toCharArray(),
-                            null,
-                            SQLiteDatabase.OPEN_READWRITE
+                            passphrase,
+                            null
                         )
                         db.close()
-                    } catch (e: Exception) {
-                        android.util.Log.e("AppDatabase", "Database verification failed (likely plain-text legacy database). Deleting to recreate securely.", e)
+                    } catch (e: Throwable) {
+                        android.util.Log.w("AppDatabase", "Database verification failed (likely plain-text legacy database or native library mismatch). Deleting to recreate securely.", e)
                         try {
                             context.deleteDatabase("arama_database")
                         } catch (de: Exception) {
-                            android.util.Log.e("AppDatabase", "Failed to delete corrupted database", de)
+                            android.util.Log.w("AppDatabase", "Failed to delete corrupted database", de)
                         }
                     }
                 }

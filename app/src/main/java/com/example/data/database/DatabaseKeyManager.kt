@@ -30,11 +30,11 @@ object DatabaseKeyManager {
             } else {
                 val key = ByteArray(32)
                 SecureRandom().nextBytes(key)
-                val encoded = Base64.encodeToString(key, Base64.DEFAULT)
+                val encoded = Base64.encodeToString(key, Base64.NO_WRAP)
                 sharedPreferences.edit().putString(KEY_PASSPHRASE, encoded).apply()
                 key
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // Fallback to standard SharedPreferences if Keystore/EncryptedSharedPreferences fails (e.g. on custom ROMs or virtual testing environments)
             val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             val savedPassphrase = prefs.getString(KEY_PASSPHRASE, null)
@@ -43,7 +43,7 @@ object DatabaseKeyManager {
             } else {
                 val key = ByteArray(32)
                 SecureRandom().nextBytes(key)
-                val encoded = Base64.encodeToString(key, Base64.DEFAULT)
+                val encoded = Base64.encodeToString(key, Base64.NO_WRAP)
                 prefs.edit().putString(KEY_PASSPHRASE, encoded).apply()
                 key
             }
