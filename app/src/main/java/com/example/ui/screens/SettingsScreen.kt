@@ -26,6 +26,10 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Spa
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material3.HorizontalDivider
+import com.example.data.model.SubscriptionPlans
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,6 +54,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,6 +76,7 @@ fun SettingsScreen(
     val isDarkTheme by viewModel.isDarkTheme.collectAsState()
     val isLocalPrivacy by viewModel.isLocalOnlyPrivacy.collectAsState()
     val email by viewModel.userEmail.collectAsState()
+    val isVerifyingPayment by viewModel.isPaymentVerifying.collectAsState()
 
     var showDeleteConfirmDialog by remember { mutableStateOf(false) }
     var reportCategory by remember { mutableStateOf("نیاز به کمک فوری (بحران استرس شدید)") }
@@ -78,6 +89,11 @@ fun SettingsScreen(
     var discountMessage by remember { mutableStateOf<String?>(null) }
     var showPaymentDialog by remember { mutableStateOf(false) }
     var selectedUpgradePlan by remember { mutableStateOf("PREMIUM") }
+
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var isInitiatingPayment by remember { mutableStateOf(false) }
+    var initiationError by remember { mutableStateOf<String?>(null) }
 
     // State variables for Local Backups & Disasters Recovery UI
     var backupString by remember { mutableStateOf("") }
@@ -269,175 +285,7 @@ fun SettingsScreen(
             }
         }
 
-        // Gemini Model Selection Block
-        val currentModelMode by viewModel.geminiModelMode.collectAsState()
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface
-            ),
-            shape = RoundedCornerShape(16.dp),
-            modifier = Modifier.fillMaxWidth(),
-            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Spa,
-                        contentDescription = "هوش مصنوعی",
-                        tint = SagePrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "تنظیمات هوش مصنوعی آراما",
-                        style = MaterialTheme.typography.titleMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = SageDeep
-                        ),
-                        modifier = Modifier.weight(1f),
-                        textAlign = TextAlign.Start
-                    )
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "مدل جمینای مورد استفاده برای پاسخ‌دهی را انتخاب کنید:",
-                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                    modifier = Modifier.fillMaxWidth(),
-                    textAlign = TextAlign.Start
-                )
-                Spacer(modifier = Modifier.height(16.dp))
 
-                // Option 1: Fast (Low-Latency)
-                Card(
-                    onClick = { viewModel.setGeminiModelMode("fast") },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "fast") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        if (currentModelMode == "fast") 2.dp else 1.dp,
-                        if (currentModelMode == "fast") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "سرعت فوق‌العاده (Lite)",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "پاسخ‌دهی آنی با مدل gemini-3.1-flash-lite",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        androidx.compose.material3.RadioButton(
-                            selected = currentModelMode == "fast",
-                            onClick = { viewModel.setGeminiModelMode("fast") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Option 2: General (Standard)
-                Card(
-                    onClick = { viewModel.setGeminiModelMode("general") },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "general") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        if (currentModelMode == "general") 2.dp else 1.dp,
-                        if (currentModelMode == "general") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "عادی و متعادل (Standard)",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "گفتگوی متعادل و روان با مدل gemini-3.5-flash",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        androidx.compose.material3.RadioButton(
-                            selected = currentModelMode == "general",
-                            onClick = { viewModel.setGeminiModelMode("general") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(10.dp))
-
-                // Option 3: Complex (High-Thinking)
-                Card(
-                    onClick = { viewModel.setGeminiModelMode("complex") },
-                    colors = CardDefaults.cardColors(
-                        containerColor = if (currentModelMode == "complex") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        if (currentModelMode == "complex") 2.dp else 1.dp,
-                        if (currentModelMode == "complex") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "تفکر عمیق و تحلیلی (High Thinking)",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = "استدلال عمیق با مدل gemini-3.1-pro-preview و تفکر بالا",
-                                style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
-                                textAlign = TextAlign.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            )
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        androidx.compose.material3.RadioButton(
-                            selected = currentModelMode == "complex",
-                            onClick = { viewModel.setGeminiModelMode("complex") },
-                            colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
-                        )
-                    }
-                }
-            }
-        }
 
         // Privacy Block
         Card(
@@ -558,6 +406,9 @@ fun SettingsScreen(
                         Text(
                             text = when (subPlan) {
                                 "FREE" -> "رایگان (Free)"
+                                "MONTHLY" -> "ماهانه (Monthly) 🌟"
+                                "YEARLY" -> "سالانه (Yearly) 🚀"
+                                "PROFESSIONAL" -> "حرفه‌ای (Professional) 💼"
                                 "PREMIUM" -> "طلایی (Premium) 🌟"
                                 "CORPORATE" -> "سازمانی (Corporate) 🏢"
                                 else -> subPlan
@@ -611,7 +462,7 @@ fun SettingsScreen(
                                 if (discount != null) {
                                     discountMessage = "کد با موفقیت اعمال شد!"
                                     if (discount == "FREE") {
-                                        viewModel.upgradeSubscription("PREMIUM", "DISCOUNT-100")
+                                        viewModel.upgradeSubscription("MONTHLY", "DISCOUNT-100")
                                     }
                                 } else {
                                     discountMessage = "کد تخفیف معتبر نیست!"
@@ -636,17 +487,316 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
+                }
 
-                    Button(
-                        onClick = {
-                            selectedUpgradePlan = "PREMIUM"
-                            showPaymentDialog = true
-                        },
-                        colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier.fillMaxWidth().height(48.dp)
+                // Plan selection list containing the 4 detailed plans
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SubscriptionPlans.values().forEach { planItem ->
+                        val isCurrent = subPlan == planItem.id
+                        val isPaid = planItem.id != "FREE"
+
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (isCurrent) SagePrimary.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+                            ),
+                            border = if (isCurrent) BorderStroke(1.5.dp, SagePrimary) else null,
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("plan_card_${planItem.id.lowercase()}")
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = planItem.persianName,
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = SageDeep)
+                                        )
+                                        
+                                        if (planItem.badge != null) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .background(
+                                                        color = if (planItem.id == "MONTHLY") SagePrimary else CrisisRed,
+                                                        shape = RoundedCornerShape(6.dp)
+                                                    )
+                                                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                                            ) {
+                                                Text(
+                                                    text = planItem.badge,
+                                                    style = MaterialTheme.typography.bodySmall.copy(
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = Color.White,
+                                                        fontSize = 10.sp
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Text(
+                                        text = if (planItem.priceTomans == 0L) "رایگان" else "${java.text.DecimalFormat("#,###").format(planItem.priceTomans)} تومان / ${planItem.period}",
+                                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = SagePrimary)
+                                    )
+                                }
+
+                                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), thickness = 0.5.dp)
+
+                                // Features list with checkmarks
+                                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    planItem.features.forEach { feature ->
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Check,
+                                                contentDescription = "ویژگی",
+                                                tint = SagePrimary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                            Text(
+                                                text = feature,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                textAlign = TextAlign.Start
+                                            )
+                                        }
+                                    }
+                                }
+
+                                Spacer(modifier = Modifier.height(4.dp))
+
+                                // Action button
+                                if (isCurrent) {
+                                    Button(
+                                        onClick = {},
+                                        enabled = false,
+                                        colors = ButtonDefaults.buttonColors(
+                                            disabledContainerColor = SagePrimary.copy(alpha = 0.15f),
+                                            disabledContentColor = SageDeep
+                                        ),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                                    ) {
+                                        Text("طرح فعال شما 🌱", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
+                                    }
+                                } else if (isPaid) {
+                                    var isThisPlanInitiating by remember { mutableStateOf(false) }
+                                    
+                                    Button(
+                                        onClick = {
+                                            if (!isInitiatingPayment && !isVerifyingPayment) {
+                                                coroutineScope.launch {
+                                                    isInitiatingPayment = true
+                                                    isThisPlanInitiating = true
+                                                    initiationError = null
+                                                    val result = com.example.data.api.AramaPaymentClient.requestPayment(
+                                                        amount = planItem.priceTomans,
+                                                        description = "خرید اشتراک ${planItem.persianName} آراما",
+                                                        plan = planItem.id
+                                                    )
+                                                    isInitiatingPayment = false
+                                                    isThisPlanInitiating = false
+                                                    if (result.isSuccess) {
+                                                        val payRes = result.getOrNull()
+                                                        if (payRes != null) {
+                                                            try {
+                                                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(payRes.paymentUrl))
+                                                                context.startActivity(browserIntent)
+                                                            } catch (e: Exception) {
+                                                                initiationError = "خطا در باز کردن درگاه پرداخت: ${e.localizedMessage}"
+                                                            }
+                                                        } else {
+                                                            initiationError = "پاسخ نامعتبر از سرور پرداخت."
+                                                        }
+                                                    } else {
+                                                        initiationError = result.exceptionOrNull()?.localizedMessage ?: "خطا در اتصال به درگاه پرداخت."
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        enabled = !isInitiatingPayment && !isVerifyingPayment,
+                                        colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier.fillMaxWidth().height(40.dp)
+                                    ) {
+                                        if (isThisPlanInitiating) {
+                                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
+                                        } else {
+                                            Text("ارتقا به این طرح 🚀", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Color.White))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f), thickness = 1.dp)
+
+                // Arama AI Engine Selection
+                val currentModelMode by viewModel.geminiModelMode.collectAsState()
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("ارتقای اشتراک به پلن طلایی (🌟 ۴۹,۰۰۰ تومان)")
+                        Icon(
+                            imageVector = Icons.Default.Spa,
+                            contentDescription = "هوش مصنوعی آراما",
+                            tint = SagePrimary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "تنظیمات موتور هوش مصنوعی آراما",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = SageDeep
+                            ),
+                            modifier = Modifier.weight(1f),
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                    Text(
+                        text = "دقت و سرعت تحلیل هوش مصنوعی آراما را متناسب با اشتراک خود تنظیم کنید:",
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start
+                    )
+
+                    // Option 1: Fast
+                    Card(
+                        onClick = { viewModel.setGeminiModelMode("fast") },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (currentModelMode == "fast") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            if (currentModelMode == "fast") 2.dp else 1.dp,
+                            if (currentModelMode == "fast") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "سرعت فوق‌العاده (موتور سبک آراما)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "پاسخ‌دهی آنی و بهینه برای مکالمات ساده و احوال‌پرسی (رایگان)",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            androidx.compose.material3.RadioButton(
+                                selected = currentModelMode == "fast",
+                                onClick = { viewModel.setGeminiModelMode("fast") },
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
+                            )
+                        }
+                    }
+
+                    // Option 2: General
+                    Card(
+                        onClick = { viewModel.setGeminiModelMode("general") },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (currentModelMode == "general") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            if (currentModelMode == "general") 2.dp else 1.dp,
+                            if (currentModelMode == "general") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "عادی و متعادل (موتور استاندارد آراما)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "گفتگوی صمیمی، هوشمند و متعادل (توصیه شده - نیازمند اشتراک ماهانه و بالاتر)",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            androidx.compose.material3.RadioButton(
+                                selected = currentModelMode == "general",
+                                onClick = { viewModel.setGeminiModelMode("general") },
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
+                            )
+                        }
+                    }
+
+                    // Option 3: Complex
+                    Card(
+                        onClick = { viewModel.setGeminiModelMode("complex") },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (currentModelMode == "complex") SagePrimary.copy(alpha = 0.08f) else Color.Transparent
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            if (currentModelMode == "complex") 2.dp else 1.dp,
+                            if (currentModelMode == "complex") SagePrimary else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "تفکر عمیق و تحلیلی (موتور فوق‌پیشرفته آراما)",
+                                    style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = "استدلال عمیق با تفکر بالا برای تحلیل‌های دقیق‌تر روان‌شناختی (نیازمند اشتراک سالانه یا حرفه‌ای)",
+                                    style = MaterialTheme.typography.labelSmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
+                                    textAlign = TextAlign.Start,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            androidx.compose.material3.RadioButton(
+                                selected = currentModelMode == "complex",
+                                onClick = { viewModel.setGeminiModelMode("complex") },
+                                colors = androidx.compose.material3.RadioButtonDefaults.colors(selectedColor = SagePrimary)
+                            )
+                        }
                     }
                 }
             }
@@ -1282,6 +1432,136 @@ fun SettingsScreen(
                     }
                 ) {
                     Text("انصراف و بازگشت", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    val paymentSuccessMsg by viewModel.paymentSuccessMessage.collectAsState()
+    val paymentErrorMsg by viewModel.paymentErrorMessage.collectAsState()
+
+    // 1. Loading Dialog for verifying payment
+    if (isVerifyingPayment) {
+        AlertDialog(
+            onDismissRequest = {},
+            title = {
+                Text(
+                    text = "تأیید تراکنش پرداخت",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)
+                ) {
+                    CircularProgressIndicator(color = SagePrimary)
+                    Text(
+                        text = "در حال تأیید تراکنش از درگاه پی‌پینگ. لطفاً شکیبا باشید...",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Start
+                    )
+                }
+            },
+            confirmButton = {},
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // 2. Success Dialog
+    if (paymentSuccessMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPaymentMessages() },
+            title = {
+                Text(
+                    text = "ارتقای اشتراک موفقیت‌آمیز 🌱",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = paymentSuccessMsg!!,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.clearPaymentMessages() },
+                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
+                ) {
+                    Text("متوجه شدم", color = Color.White)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // 3. Error Dialog
+    if (paymentErrorMsg != null) {
+        AlertDialog(
+            onDismissRequest = { viewModel.clearPaymentMessages() },
+            title = {
+                Text(
+                    text = "خطا در فرآیند پرداخت",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = CrisisRed),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = paymentErrorMsg!!,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { viewModel.clearPaymentMessages() },
+                    colors = ButtonDefaults.buttonColors(containerColor = CrisisRed)
+                ) {
+                    Text("بستن", color = Color.White)
+                }
+            },
+            shape = RoundedCornerShape(20.dp)
+        )
+    }
+
+    // 4. Initiation Error Dialog
+    if (initiationError != null) {
+        AlertDialog(
+            onDismissRequest = { initiationError = null },
+            title = {
+                Text(
+                    text = "خطای اتصال به درگاه",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = CrisisRed),
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Text(
+                    text = initiationError!!,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Start,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = { initiationError = null },
+                    colors = ButtonDefaults.buttonColors(containerColor = CrisisRed)
+                ) {
+                    Text("بستن", color = Color.White)
                 }
             },
             shape = RoundedCornerShape(20.dp)

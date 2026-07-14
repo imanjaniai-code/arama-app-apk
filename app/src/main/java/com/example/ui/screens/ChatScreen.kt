@@ -265,7 +265,11 @@ fun ChatScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     items(visibleMessages) { message ->
-                        ChatMessageBubble(message = message, onRetry = { viewModel.retryMessage(it) })
+                        ChatMessageBubble(
+                            message = message,
+                            onRetry = { viewModel.retryMessage(it) },
+                            onUpgradeClick = { viewModel.navigate("settings") }
+                        )
                     }
 
                     // Typing Indicator
@@ -408,7 +412,7 @@ fun ChatScreen(
 }
 
 @Composable
-fun ChatMessageBubble(message: ChatEntity, onRetry: ((ChatEntity) -> Unit)? = null) {
+fun ChatMessageBubble(message: ChatEntity, onRetry: ((ChatEntity) -> Unit)? = null, onUpgradeClick: (() -> Unit)? = null) {
     val isUser = message.sender == "user"
     val bubbleColor = if (message.isFailed) {
         MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
@@ -530,6 +534,17 @@ fun ChatMessageBubble(message: ChatEntity, onRetry: ((ChatEntity) -> Unit)? = nu
                                 style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 24.sp),
                                 textAlign = TextAlign.Start
                             )
+                            if (message.text == "سقف گفتگوی رایگان امروز تمام شد. برای گفتگوی نامحدود، اشتراک تهیه کنید") {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Button(
+                                    onClick = { onUpgradeClick?.invoke() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                                    shape = RoundedCornerShape(8.dp),
+                                    modifier = Modifier.padding(top = 4.dp).testTag("chat_limit_upgrade_button")
+                                ) {
+                                    Text("خرید اشتراک 🌟", color = Color.White, style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold))
+                                }
+                            }
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
                                 text = timeString,

@@ -93,6 +93,29 @@ class AmbientSoundSynthesizer {
                             buffer[i] = (sample * Short.MAX_VALUE).toInt()
                                 .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
                         }
+                        "forest" -> {
+                            // Gentle rustling wind: very low-pass filtered white noise with slow random modulation
+                            val white = random.nextGaussian().toFloat() * 0.1f
+                            lastOut = (lastOut + (0.01f * white)) / 1.01f
+                            phase += 2.0 * Math.PI / (sampleRate * 8) // 8 seconds cycle
+                            val modulation = (sin(phase) + 1.0) / 2.0
+                            val sample = lastOut * 3.0f * (0.3f + 0.7f * modulation.toFloat())
+                            buffer[i] = (sample * Short.MAX_VALUE).toInt()
+                                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                        }
+                        "fire" -> {
+                            // Campfire: low-pass rumbling background noise + random crackles (high frequency pops)
+                            val white = random.nextGaussian().toFloat() * 0.08f
+                            lastOut = (lastOut + (0.015f * white)) / 1.015f
+                            var sample = lastOut * 2.0f
+                            // Generate random crackle (1 in ~1500 samples)
+                            if (random.nextFloat() > 0.9995f) {
+                                val crackle = (random.nextFloat() * 2.0f - 1.0f) * 0.6f
+                                sample += crackle
+                            }
+                            buffer[i] = (sample * Short.MAX_VALUE).toInt()
+                                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                        }
                     }
                 }
                 try {

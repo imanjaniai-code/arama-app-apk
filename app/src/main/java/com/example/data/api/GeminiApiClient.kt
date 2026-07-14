@@ -19,6 +19,23 @@ import java.util.concurrent.TimeUnit
 object GeminiApiClient {
     private const val TAG = "GeminiApiClient"
 
+    // Safe dynamic getter for BACKEND_URL to prevent compilation errors if not defined in .env yet
+    private val BASE_URL: String
+        get() {
+            return try {
+                val field = com.arama.app.BuildConfig::class.java.getField("BACKEND_URL")
+                val value = field.get(null) as? String
+                if (!value.isNullOrEmpty() && value != "BACKEND_URL_PLACEHOLDER") {
+                    value.trim().removeSuffix("/")
+                } else {
+                    "http://10.0.2.2:3000"
+                }
+            } catch (e: Exception) {
+                // Default loopback IP for Android Emulator to communicate with local development server
+                "http://10.0.2.2:3000"
+            }
+        }
+
     // Keep custom Content and Part data classes to maintain compatibility across the codebase
     data class Content(
         val parts: List<Part>,
@@ -29,24 +46,31 @@ object GeminiApiClient {
         val text: String
     )
 
-    // Gemini API Request Payload structures
-    data class GeminiRequest(
-        val contents: List<Content>,
-        val systemInstruction: Content? = null,
-        val generationConfig: GenerationConfig? = null
-    )
-
-    data class GenerationConfig(
-        val temperature: Float? = null
-    )
-
-    // Gemini API Response Payload structures
+    // Gemini API Response Payload structures (used for streaming chunks)
     data class GeminiResponse(
         val candidates: List<Candidate>?
     )
 
     data class Candidate(
         val content: Content?
+    )
+
+    // Request payload structure expected by our secure node proxy
+    data class ProxyRequest(
+        val message: String,
+        val context: String?,
+        val history: List<ProxyHistoryItem>?,
+        val modelMode: String
+    )
+
+    data class ProxyHistoryItem(
+        val role: String,
+        val text: String
+    )
+
+    // Response structure returned by our secure node proxy
+    data class ProxyResponse(
+        val response: String?
     )
 
     private val moshi = Moshi.Builder()
@@ -65,79 +89,75 @@ object GeminiApiClient {
         systemInstructionText: String,
         modelMode: String = "general"
     ): String = withContext(Dispatchers.IO) {
-        val apiKey = com.arama.app.BuildConfig.GEMINI_API_KEY
-
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-            Log.e(TAG, "Gemini API key is missing or using placeholder")
-            return@withContext "خطا: کلید API برای پیام‌رسان آراما در تنظیمات برنامه ثبت نشده است. لطفاً کلید معتبر را در بخش Secrets اضافه کنید."
-        }
-
-        // Map the user request mode to the best available official model name
-        val modelName = when (modelMode) {
-            "fast" -> "gemini-3.1-flash-lite-preview"
-            "complex" -> "gemini-3.1-pro-preview"
-            else -> "gemini-3.5-flash"
-        }
-
-        // Reconstruct conversation contents including the new user turn
-        val contents = history.toMutableList()
-        contents.add(
-            Content(
-                role = "user",
-                parts = listOf(Part(text = prompt))
+        val proxyHistory = history.map { content ->
+            ProxyHistoryItem(
+                role = content.role ?: "user",
+                text = content.parts.firstOrNull()?.text ?: ""
             )
-        )
-
-        val systemInstruction = if (systemInstructionText.isNotEmpty()) {
-            Content(parts = listOf(Part(text = systemInstructionText)))
-        } else {
-            null
         }
 
-        val geminiRequest = GeminiRequest(
-            contents = contents,
-            systemInstruction = systemInstruction,
-            generationConfig = GenerationConfig(temperature = 0.7f)
+        val proxyRequest = ProxyRequest(
+            message = prompt,
+            context = if (systemInstructionText.isNotEmpty()) systemInstructionText else null,
+            history = proxyHistory,
+            modelMode = modelMode
         )
 
-        val requestAdapter = moshi.adapter(GeminiRequest::class.java)
-        val jsonRequest = requestAdapter.toJson(geminiRequest)
+        val requestAdapter = moshi.adapter(ProxyRequest::class.java)
+        val jsonRequest = requestAdapter.toJson(proxyRequest)
 
         val requestBody = jsonRequest.toRequestBody("application/json; charset=utf-8".toMediaType())
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:generateContent?key=$apiKey"
+        val url = "$BASE_URL/chat"
 
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url(url)
             .post(requestBody)
-            .build()
+
+        // Securely retrieve the current Firebase Auth ID token and attach it to the header
+        val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (firebaseUser != null) {
+            try {
+                val task = firebaseUser.getIdToken(false)
+                val result = com.google.android.gms.tasks.Tasks.await(task)
+                val token = result.token
+                if (!token.isNullOrEmpty()) {
+                    requestBuilder.addHeader("Authorization", "Bearer $token")
+                    Log.d(TAG, "Successfully attached Firebase ID token to backend proxy request.")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to retrieve Firebase ID token for Authorization header", e)
+            }
+        }
+
+        val request = requestBuilder.build()
 
         try {
             okHttpClient.newCall(request).execute().use { response ->
                 val bodyStr = response.body?.string()
                 if (!response.isSuccessful) {
-                    Log.e(TAG, "Gemini API call failed with code: ${response.code}, body: $bodyStr")
-                    return@withContext "خطا در برقراری ارتباط با سرور هوش مصنوعی آراما (${response.code}). لطفاً اتصال اینترنت خود را بررسی کنید."
+                    Log.e(TAG, "Proxy API call failed with code: ${response.code}, body: $bodyStr")
+                    return@withContext "خطا در برقراری ارتباط با سرور میانی آراما (${response.code}). لطفاً اتصال اینترنت خود را بررسی کنید."
                 }
 
                 if (bodyStr.isNullOrEmpty()) {
-                    Log.e(TAG, "Empty response body from Gemini API")
-                    return@withContext "خطا در دریافت پاسخ از سرور هوش مصنوعی آراما."
+                    Log.e(TAG, "Empty response body from Proxy API")
+                    return@withContext "خطا در دریافت پاسخ از سرور میانی آراما."
                 }
 
-                val responseAdapter = moshi.adapter(GeminiResponse::class.java)
-                val geminiResponse = responseAdapter.fromJson(bodyStr)
-                val responseText = geminiResponse?.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
+                val responseAdapter = moshi.adapter(ProxyResponse::class.java)
+                val proxyResponse = responseAdapter.fromJson(bodyStr)
+                val responseText = proxyResponse?.response
 
                 if (responseText.isNullOrEmpty()) {
                     Log.e(TAG, "Failed to extract text from response structure: $bodyStr")
-                    return@withContext "خطا: پاسخ دریافت شده از آراما نامعتبر یا خالی بود."
+                    return@withContext "خطا: پاسخ دریافت شده از سرور میانی نامعتبر یا خالی بود."
                 }
 
                 return@withContext responseText
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Network call to Gemini API failed", e)
-            "خطا در برقراری ارتباط با سرور هوش مصنوعی آراما. لطفاً اتصال اینترنت خود را بررسی کنید."
+            Log.e(TAG, "Network call to Proxy API failed", e)
+            "خطا در برقراری ارتباط با سرور میانی آراما. لطفاً اتصال اینترنت خود را بررسی کنید."
         }
     }
 
@@ -147,56 +167,53 @@ object GeminiApiClient {
         systemInstructionText: String,
         modelMode: String = "general"
     ): Flow<String> = flow {
-        val apiKey = com.arama.app.BuildConfig.GEMINI_API_KEY
-
-        if (apiKey.isEmpty() || apiKey == "MY_GEMINI_API_KEY") {
-            Log.e(TAG, "Gemini API key is missing or using placeholder")
-            emit("خطا: کلید API برای پیام‌رسان آراما در تنظیمات برنامه ثبت نشده است. لطفاً کلید معتبر را در بخش Secrets اضافه کنید.")
-            return@flow
-        }
-
-        val modelName = when (modelMode) {
-            "fast" -> "gemini-3.1-flash-lite-preview"
-            "complex" -> "gemini-3.1-pro-preview"
-            else -> "gemini-3.5-flash"
-        }
-
-        val contents = history.toMutableList()
-        contents.add(
-            Content(
-                role = "user",
-                parts = listOf(Part(text = prompt))
+        val proxyHistory = history.map { content ->
+            ProxyHistoryItem(
+                role = content.role ?: "user",
+                text = content.parts.firstOrNull()?.text ?: ""
             )
-        )
-
-        val systemInstruction = if (systemInstructionText.isNotEmpty()) {
-            Content(parts = listOf(Part(text = systemInstructionText)))
-        } else {
-            null
         }
 
-        val geminiRequest = GeminiRequest(
-            contents = contents,
-            systemInstruction = systemInstruction,
-            generationConfig = GenerationConfig(temperature = 0.7f)
+        val proxyRequest = ProxyRequest(
+            message = prompt,
+            context = if (systemInstructionText.isNotEmpty()) systemInstructionText else null,
+            history = proxyHistory,
+            modelMode = modelMode
         )
 
-        val requestAdapter = moshi.adapter(GeminiRequest::class.java)
-        val jsonRequest = requestAdapter.toJson(geminiRequest)
+        val requestAdapter = moshi.adapter(ProxyRequest::class.java)
+        val jsonRequest = requestAdapter.toJson(proxyRequest)
 
         val requestBody = jsonRequest.toRequestBody("application/json; charset=utf-8".toMediaType())
-        val url = "https://generativelanguage.googleapis.com/v1beta/models/$modelName:streamGenerateContent?key=$apiKey&alt=sse"
+        val url = "$BASE_URL/chat-stream"
 
-        val request = Request.Builder()
+        val requestBuilder = Request.Builder()
             .url(url)
             .post(requestBody)
-            .build()
+
+        // Securely retrieve the current Firebase Auth ID token and attach it to the header
+        val firebaseUser = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser
+        if (firebaseUser != null) {
+            try {
+                val task = firebaseUser.getIdToken(false)
+                val result = com.google.android.gms.tasks.Tasks.await(task)
+                val token = result.token
+                if (!token.isNullOrEmpty()) {
+                    requestBuilder.addHeader("Authorization", "Bearer $token")
+                    Log.d(TAG, "Successfully attached Firebase ID token to backend proxy stream request.")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to retrieve Firebase ID token for Authorization header", e)
+            }
+        }
+
+        val request = requestBuilder.build()
 
         try {
             val response = okHttpClient.newCall(request).execute()
             if (!response.isSuccessful) {
                 val errBody = response.body?.string() ?: ""
-                Log.e(TAG, "Gemini Stream API call failed with code: ${response.code}, body: $errBody")
+                Log.e(TAG, "Proxy Stream API call failed with code: ${response.code}, body: $errBody")
                 emit("Error: ${response.code}")
                 return@flow
             }
@@ -229,7 +246,7 @@ object GeminiApiClient {
             }
             response.close()
         } catch (e: Exception) {
-            Log.e(TAG, "Network call to Gemini API failed during streaming", e)
+            Log.e(TAG, "Network call to Proxy API failed during streaming", e)
             emit("Error: ${e.message ?: "اتصال اینترنت قطع است"}")
         }
     }.flowOn(Dispatchers.IO)

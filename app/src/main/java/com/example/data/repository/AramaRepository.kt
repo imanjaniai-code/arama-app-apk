@@ -5,12 +5,14 @@ import com.example.data.database.ChatEntity
 import com.example.data.database.MoodEntity
 import com.example.data.database.SecurityLogEntity
 import com.example.data.database.SubscriptionEntity
+import com.example.data.database.ContentItemEntity
 import kotlinx.coroutines.flow.Flow
 
 class AramaRepository(private val aramaDao: AramaDao) {
     val allMoods: Flow<List<MoodEntity>> = aramaDao.getAllMoods()
     val allChatMessages: Flow<List<ChatEntity>> = aramaDao.getAllChatMessages()
     val allSecurityLogs: Flow<List<SecurityLogEntity>> = aramaDao.getAllSecurityLogs()
+    val allContentItems: Flow<List<ContentItemEntity>> = aramaDao.getAllContentItems()
 
     suspend fun insertMood(mood: MoodEntity) {
         aramaDao.insertMood(mood)
@@ -34,6 +36,14 @@ class AramaRepository(private val aramaDao: AramaDao) {
 
     suspend fun insertSubscription(subscription: SubscriptionEntity) {
         aramaDao.insertSubscription(subscription)
+    }
+
+    suspend fun insertContentItems(items: List<ContentItemEntity>) {
+        aramaDao.insertContentItems(items)
+    }
+
+    suspend fun getContentItemCount(): Int {
+        return aramaDao.getContentItemCount()
     }
 
     suspend fun clearAllData() {

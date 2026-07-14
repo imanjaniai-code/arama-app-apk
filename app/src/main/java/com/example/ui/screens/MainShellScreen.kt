@@ -158,21 +158,21 @@ fun MainShellScreen(
                 )
 
                 NavigationBarItem(
-                    selected = currentRoute == "dashboard" || currentRoute == "mood",
-                    onClick = { viewModel.navigate("dashboard") },
+                    selected = currentRoute == "content_library" || currentRoute == "dashboard" || currentRoute == "mood",
+                    onClick = { viewModel.navigate("content_library") },
                     icon = {
                         Icon(
-                            imageVector = Icons.Default.InsertChart,
-                            contentDescription = "نمودار احساسات"
+                            imageVector = Icons.Default.Spa,
+                            contentDescription = "آرامش و احوال"
                         )
                     },
-                    label = { Text("نمودار احساسات") },
+                    label = { Text("آرامش و احوال") },
                     colors = NavigationBarItemDefaults.colors(
                         selectedIconColor = SageDeep,
                         selectedTextColor = SageDeep,
                         indicatorColor = SageTintBg
                     ),
-                    modifier = Modifier.testTag("nav_item_dashboard")
+                    modifier = Modifier.testTag("nav_item_content_library")
                 )
 
                 NavigationBarItem(
@@ -202,8 +202,9 @@ fun MainShellScreen(
         ) {
             when (currentRoute) {
                 "chat" -> ChatScreen(viewModel)
-                "mood" -> MoodScreen(viewModel)
-                "dashboard" -> DashboardScreen(viewModel)
+                "content_library" -> ContentLibraryScreen(viewModel, initialTab = 0)
+                "mood" -> ContentLibraryScreen(viewModel, initialTab = 1)
+                "dashboard" -> ContentLibraryScreen(viewModel, initialTab = 1)
                 "settings" -> SettingsScreen(viewModel)
                 else -> ChatScreen(viewModel) // fallback
             }

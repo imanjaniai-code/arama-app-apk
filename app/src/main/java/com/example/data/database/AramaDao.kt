@@ -50,4 +50,14 @@ interface AramaDao {
 
     @Query("DELETE FROM subscriptions")
     suspend fun deleteAllSubscriptions()
+
+    // Content Library operations
+    @Query("SELECT * FROM content_items ORDER BY id ASC")
+    fun getAllContentItems(): Flow<List<ContentItemEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertContentItems(items: List<ContentItemEntity>)
+
+    @Query("SELECT COUNT(*) FROM content_items")
+    suspend fun getContentItemCount(): Int
 }
