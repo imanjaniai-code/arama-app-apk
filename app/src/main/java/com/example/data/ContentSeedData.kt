@@ -190,6 +190,26 @@ object ContentSeedData {
             iconEmoji = "🔥",
             isFree = false,
             soundType = "fire"
+        ),
+        ContentItemEntity(
+            id = 18,
+            title = "فرکانس عشق و هارمونی ذن (۵۲۸ هرتز)",
+            category = "SOUND",
+            shortDescription = "ارتعاشات التیام‌بخش فرکانس‌های ذن و سولفژیو برای مدیتیشن و توازن ذهن.",
+            durationSeconds = 300,
+            iconEmoji = "🧘",
+            isFree = true,
+            soundType = "zen"
+        ),
+        ContentItemEntity(
+            id = 19,
+            title = "طنین ناقوس‌های باد تبتی",
+            category = "SOUND",
+            shortDescription = "صدای روح‌نواز ناقوس‌ها و کاسه‌های تبتی در بستری از امواج آرام‌بخش.",
+            durationSeconds = 300,
+            iconEmoji = "🔔",
+            isFree = false,
+            soundType = "chimes"
         )
     )
 }

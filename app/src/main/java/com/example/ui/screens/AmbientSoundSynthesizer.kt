@@ -65,6 +65,12 @@ class AmbientSoundSynthesizer {
             var lastOut = 0.0f
             var phase = 0.0
 
+            // Chime & harmonic states for advanced synthesis
+            val chimeFreqs = doubleArrayOf(396.0, 417.0, 528.0, 639.0, 741.0, 852.0)
+            val chimeAmps = doubleArrayOf(0.0, 0.0, 0.0, 0.0, 0.0, 0.0)
+            val chimeDecays = doubleArrayOf(0.99992, 0.99994, 0.99995, 0.99993, 0.99992, 0.99991)
+            var chimeTimer = 0
+
             while (isActive) {
                 for (i in buffer.indices) {
                     when (type) {
@@ -113,6 +119,56 @@ class AmbientSoundSynthesizer {
                                 val crackle = (random.nextFloat() * 2.0f - 1.0f) * 0.6f
                                 sample += crackle
                             }
+                            buffer[i] = (sample * Short.MAX_VALUE).toInt()
+                                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                        }
+                        "zen" -> {
+                            // Solfeggio healing frequencies & pulsing zen music drone (432Hz & 528Hz)
+                            val sampleRateFloat = sampleRate.toFloat()
+                            phase += 1.0 / sampleRateFloat
+                            
+                            // LFOs for deep breathing volume modulations
+                            val lfo1 = (sin(2.0 * Math.PI * 0.05 * phase) + 1.0) / 2.0 // 20s wave
+                            val lfo2 = (sin(2.0 * Math.PI * 0.03 * phase) + 1.0) / 2.0 // 33s wave
+                            
+                            val w1 = sin(2.0 * Math.PI * 136.1 * phase) * 0.32 * (0.4 + 0.6 * lfo1)
+                            val w2 = sin(2.0 * Math.PI * 272.2 * phase) * 0.18 * (0.3 + 0.7 * lfo2)
+                            val w3 = sin(2.0 * Math.PI * 528.0 * phase) * 0.12 * (0.2 + 0.8 * lfo1 * lfo2)
+                            
+                            // Add ocean wind whispering in the background
+                            val white = random.nextGaussian().toFloat() * 0.012f
+                            lastOut = (lastOut + (0.008f * white)) / 1.008f
+                            
+                            val sample = (w1 + w2 + w3).toFloat() + lastOut
+                            buffer[i] = (sample * Short.MAX_VALUE).toInt()
+                                .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
+                        }
+                        "chimes" -> {
+                            // Tibetan wind chimes on Solfeggio frequencies over soft healing sound pad
+                            val sampleRateFloat = sampleRate.toFloat()
+                            phase += 1.0 / sampleRateFloat
+                            
+                            chimeTimer++
+                            if (chimeTimer >= sampleRate * 2.5) {
+                                chimeTimer = 0
+                                if (random.nextFloat() > 0.35f) {
+                                    val idx = random.nextInt(chimeFreqs.size)
+                                    chimeAmps[idx] = 0.15 + random.nextFloat() * 0.18
+                                }
+                            }
+                            
+                            var chimeSum = 0.0
+                            for (j in chimeFreqs.indices) {
+                                if (chimeAmps[j] > 0.001) {
+                                    chimeSum += sin(2.0 * Math.PI * chimeFreqs[j] * phase) * chimeAmps[j]
+                                    chimeAmps[j] *= chimeDecays[j]
+                                }
+                            }
+                            
+                            val white = random.nextGaussian().toFloat() * 0.01f
+                            lastOut = (lastOut + (0.02f * white)) / 1.02f
+                            
+                            val sample = chimeSum.toFloat() + lastOut
                             buffer[i] = (sample * Short.MAX_VALUE).toInt()
                                 .coerceIn(Short.MIN_VALUE.toInt(), Short.MAX_VALUE.toInt()).toShort()
                         }

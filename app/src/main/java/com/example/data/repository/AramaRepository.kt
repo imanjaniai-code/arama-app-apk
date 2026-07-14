@@ -6,6 +6,7 @@ import com.example.data.database.MoodEntity
 import com.example.data.database.SecurityLogEntity
 import com.example.data.database.SubscriptionEntity
 import com.example.data.database.ContentItemEntity
+import com.example.data.database.VoiceJournalEntity
 import kotlinx.coroutines.flow.Flow
 
 class AramaRepository(private val aramaDao: AramaDao) {
@@ -13,6 +14,19 @@ class AramaRepository(private val aramaDao: AramaDao) {
     val allChatMessages: Flow<List<ChatEntity>> = aramaDao.getAllChatMessages()
     val allSecurityLogs: Flow<List<SecurityLogEntity>> = aramaDao.getAllSecurityLogs()
     val allContentItems: Flow<List<ContentItemEntity>> = aramaDao.getAllContentItems()
+    val allVoiceJournals: Flow<List<VoiceJournalEntity>> = aramaDao.getAllVoiceJournals()
+
+    suspend fun insertVoiceJournal(journal: VoiceJournalEntity) {
+        aramaDao.insertVoiceJournal(journal)
+    }
+
+    suspend fun deleteVoiceJournalById(id: Int) {
+        aramaDao.deleteVoiceJournalById(id)
+    }
+
+    suspend fun deleteAllVoiceJournals() {
+        aramaDao.deleteAllVoiceJournals()
+    }
 
     suspend fun insertMood(mood: MoodEntity) {
         aramaDao.insertMood(mood)
@@ -51,5 +65,6 @@ class AramaRepository(private val aramaDao: AramaDao) {
         aramaDao.deleteAllChatMessages()
         aramaDao.deleteAllSecurityLogs()
         aramaDao.deleteAllSubscriptions()
+        aramaDao.deleteAllVoiceJournals()
     }
 }

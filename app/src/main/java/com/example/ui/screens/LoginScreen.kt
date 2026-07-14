@@ -326,36 +326,7 @@ fun LoginScreen(
                             shape = RoundedCornerShape(16.dp)
                         )
 
-                        // Friendly visual hint showing the simulated OTP (for direct, high-fidelity experience)
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Card(
-                            colors = CardDefaults.cardColors(containerColor = SageTintBg),
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(14.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "پیامک فعال‌سازی آراما (ارسال واقعی + شبیه‌ساز کمکی)",
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = SagePrimary,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                )
-                                Spacer(modifier = Modifier.height(4.dp))
-                                Text(
-                                    text = "کد تأیید شما: ${generatedOtp.toPersianDigits()}",
-                                    style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = SageDeep,
-                                        fontWeight = FontWeight.Black,
-                                        fontSize = 18.sp,
-                                        letterSpacing = 1.sp
-                                    )
-                                )
-                            }
-                        }
+
 
                         if (loginError != null) {
                             Spacer(modifier = Modifier.height(16.dp))

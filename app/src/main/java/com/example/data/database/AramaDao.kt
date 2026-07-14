@@ -60,4 +60,17 @@ interface AramaDao {
 
     @Query("SELECT COUNT(*) FROM content_items")
     suspend fun getContentItemCount(): Int
+
+    // Voice Journal operations
+    @Query("SELECT * FROM voice_journals ORDER BY timestamp DESC")
+    fun getAllVoiceJournals(): Flow<List<VoiceJournalEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertVoiceJournal(journal: VoiceJournalEntity)
+
+    @Query("DELETE FROM voice_journals WHERE id = :id")
+    suspend fun deleteVoiceJournalById(id: Int)
+
+    @Query("DELETE FROM voice_journals")
+    suspend fun deleteAllVoiceJournals()
 }

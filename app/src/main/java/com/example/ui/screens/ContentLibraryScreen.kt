@@ -46,6 +46,18 @@ import com.arama.app.R
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
+import android.content.Intent
+import android.os.Bundle
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -377,6 +389,12 @@ fun ContentLibraryScreen(
                                     }
                                 }
                             }
+                        }
+
+                        // Voice Journaling Section with AI Summaries
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            VoiceJournalSection(viewModel = viewModel)
                         }
 
                         if (moods.isEmpty()) {
@@ -773,8 +791,30 @@ fun MeditationPlayer(
     item: ContentItemEntity,
     onBack: () -> Unit
 ) {
+    val bgSynthesizer = remember { AmbientSoundSynthesizer() }
     var isPlaying by remember { mutableStateOf(false) }
     var secondsElapsed by remember { mutableStateOf(0) }
+    var selectedBgSound by remember { mutableStateOf("zen") } // Default to our beautiful Zen Solfeggio drone
+    var bgVolume by remember { mutableStateOf(0.4f) }
+
+    // Control sound play state and disposal on navigate back
+    DisposableEffect(Unit) {
+        onDispose {
+            bgSynthesizer.stopPlaying()
+        }
+    }
+
+    LaunchedEffect(isPlaying, selectedBgSound) {
+        if (isPlaying && selectedBgSound != "none") {
+            bgSynthesizer.startPlaying(selectedBgSound, bgVolume)
+        } else {
+            bgSynthesizer.stopPlaying()
+        }
+    }
+
+    LaunchedEffect(bgVolume) {
+        bgSynthesizer.setVolume(bgVolume)
+    }
 
     LaunchedEffect(isPlaying) {
         if (isPlaying) {
@@ -790,6 +830,36 @@ fun MeditationPlayer(
 
     val progress = secondsElapsed.toFloat() / item.durationSeconds.toFloat()
 
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.35f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "scale"
+    )
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.6f,
+        targetValue = 0.0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "alpha"
+    )
+
+    val bgOptions = listOf(
+        Triple("none", "سکوت 🔕", "بدون موسیقی زمینه"),
+        Triple("zen", "فرکانس ۵۲۸ هرتز 🧘", "هارمونی التیام‌بخش ذن"),
+        Triple("chimes", "ناقوس تبتی 🔔", "طنین شفا‌بخش کاسه‌های تبت"),
+        Triple("rain", "باران پاییزی 🌧️", "ریزش ملایم و آرام باران"),
+        Triple("ocean", "امواج اقیانوس 🌊", "جزر و مد صخره‌های ساحلی"),
+        Triple("forest", "نسیم جنگل 🌲", "باد پاییزی در شاخسار بید"),
+        Triple("fire", "آتش کلبه 🔥", "نوستالژی ترکیدن هیزم‌ها")
+    )
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -803,7 +873,11 @@ fun MeditationPlayer(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(
-                onClick = onBack,
+                onClick = {
+                    bgSynthesizer.stopPlaying()
+                    isPlaying = false
+                    onBack()
+                },
                 modifier = Modifier.background(SageTintBg, CircleShape)
             ) {
                 Icon(
@@ -813,7 +887,7 @@ fun MeditationPlayer(
                 )
             }
             Text(
-                text = "مدیتیشن هدایت‌شده",
+                text = "مدیتیشن و موسیقی آرامش",
                 style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold,
                     color = SagePrimary
@@ -822,7 +896,7 @@ fun MeditationPlayer(
             Box(modifier = Modifier.size(48.dp)) // Spacer
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
         // Card displaying current session
         Card(
@@ -839,25 +913,41 @@ fun MeditationPlayer(
                     .padding(20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Icon + Title
+                // Pulsating Icon + Title
                 Box(
-                    modifier = Modifier
-                        .size(64.dp)
-                        .background(SageTintBg, CircleShape),
+                    modifier = Modifier.height(72.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = item.iconEmoji, fontSize = 32.sp)
+                    if (isPlaying) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .scale(pulseScale)
+                                .background(SagePrimary.copy(alpha = pulseAlpha), CircleShape)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(64.dp)
+                            .background(SageTintBg, CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = item.iconEmoji, fontSize = 32.sp)
+                    }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                
+                Spacer(modifier = Modifier.height(8.dp))
+                
                 Text(
                     text = item.title,
-                    style = MaterialTheme.typography.titleLarge.copy(
+                    style = MaterialTheme.typography.titleMedium.copy(
                         fontWeight = FontWeight.Bold,
                         color = SageDeep
                     ),
                     textAlign = TextAlign.Center
                 )
-                Spacer(modifier = Modifier.height(16.dp))
+                
+                Spacer(modifier = Modifier.height(12.dp))
 
                 // Scrollable text body
                 Box(
@@ -865,11 +955,11 @@ fun MeditationPlayer(
                         .fillMaxWidth()
                         .weight(1f)
                         .background(
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f),
                             RoundedCornerShape(16.dp)
                         )
                         .border(1.dp, SageTintBg, RoundedCornerShape(16.dp))
-                        .padding(16.dp)
+                        .padding(14.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -878,8 +968,8 @@ fun MeditationPlayer(
                     ) {
                         Text(
                             text = item.guidedText,
-                            style = MaterialTheme.typography.bodyLarge.copy(
-                                lineHeight = 28.sp,
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                lineHeight = 26.sp,
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
                             textAlign = TextAlign.Right,
@@ -888,7 +978,83 @@ fun MeditationPlayer(
                     }
                 }
 
-                Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // MUSIC / SONG CHOOSER (UI/UX enhancement)
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = "موسیقی و آوای پس‌زمینه 🎵",
+                        style = MaterialTheme.typography.labelMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = SageDeep
+                        ),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+                    
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        reverseLayout = true // Right to Left for Persian readability
+                    ) {
+                        items(bgOptions) { option ->
+                            val isSelected = selectedBgSound == option.first
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(
+                                        if (isSelected) SagePrimary else SageTintBg.copy(alpha = 0.5f)
+                                    )
+                                    .clickable {
+                                        selectedBgSound = option.first
+                                    }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    text = option.second,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        color = if (isSelected) Color.White else SageDeep,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    
+                    if (selectedBgSound != "none") {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.End
+                        ) {
+                            Slider(
+                                value = bgVolume,
+                                onValueChange = { bgVolume = it },
+                                valueRange = 0f..1f,
+                                colors = SliderDefaults.colors(
+                                    activeTrackColor = SagePrimary,
+                                    inactiveTrackColor = SageTintBg,
+                                    thumbColor = SageDeep
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(18.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.VolumeUp,
+                                contentDescription = "ولوم موسیقی",
+                                tint = SagePrimary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Progression Bar
                 Column(modifier = Modifier.fillMaxWidth()) {
@@ -901,7 +1067,7 @@ fun MeditationPlayer(
                         color = SagePrimary,
                         trackColor = SageTintBg
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(6.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -942,14 +1108,14 @@ fun MeditationPlayer(
                     IconButton(
                         onClick = { isPlaying = !isPlaying },
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(56.dp)
                             .background(SagePrimary, CircleShape)
                     ) {
                         Icon(
                             imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                             contentDescription = if (isPlaying) "توقف" else "پخش",
                             tint = Color.White,
-                            modifier = Modifier.size(32.dp)
+                            modifier = Modifier.size(28.dp)
                         )
                     }
 
@@ -1591,5 +1757,525 @@ fun MoodButtonMini(
             ),
             textAlign = TextAlign.Center
         )
+    }
+}
+
+@Composable
+fun VoiceJournalSection(
+    viewModel: MainViewModel
+) {
+    val context = LocalContext.current
+    val voiceJournals by viewModel.allVoiceJournals.collectAsState()
+    val isSummarizing by viewModel.isSummarizingJournal.collectAsState()
+    val journalError by viewModel.journalError.collectAsState()
+
+    var transcribedText by remember { mutableStateOf("") }
+    var isListening by remember { mutableStateOf(false) }
+    var statusText by remember { mutableStateOf("دکمه میکروفون را بزنید و شروع به صحبت کنید 🎙️") }
+    var secondsElapsed by remember { mutableStateOf(0) }
+    var rmsValue by remember { mutableStateOf(0f) }
+
+    // State for Collapsed/Expanded full raw text of entries
+    var expandedEntryId by remember { mutableStateOf<Int?>(null) }
+
+    // Init speech recognizer safely
+    val speechRecognizer = remember {
+        try {
+            SpeechRecognizer.createSpeechRecognizer(context)
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            try {
+                speechRecognizer?.destroy()
+            } catch (e: Exception) {
+                // ignore
+            }
+        }
+    }
+
+    // Timer effect
+    LaunchedEffect(isListening) {
+        if (isListening) {
+            secondsElapsed = 0
+            while (isListening) {
+                delay(1000)
+                secondsElapsed++
+            }
+        }
+    }
+
+    val speechListener = remember {
+        object : RecognitionListener {
+            override fun onReadyForSpeech(params: Bundle?) {
+                isListening = true
+                statusText = "در حال شنیدن... صحبت کنید 🎤"
+            }
+            override fun onBeginningOfSpeech() {}
+            override fun onRmsChanged(rmsdB: Float) {
+                rmsValue = rmsdB
+            }
+            override fun onBufferReceived(buffer: ByteArray?) {}
+            override fun onEndOfSpeech() {
+                statusText = "در حال پردازش صدا... ⏳"
+            }
+            override fun onError(error: Int) {
+                isListening = false
+                val message = when (error) {
+                    SpeechRecognizer.ERROR_AUDIO -> "خطای صوتی."
+                    SpeechRecognizer.ERROR_CLIENT -> "سرویس گفتار در دسترس نیست یا متوقف شد."
+                    SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "عدم دسترسی به میکروفون."
+                    SpeechRecognizer.ERROR_NETWORK -> "خطای شبکه."
+                    SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "اتمام زمان شبکه."
+                    SpeechRecognizer.ERROR_NO_MATCH -> "کلمه‌ای تشخیص داده نشد."
+                    SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "سرویس شلوغ است. لطفاً کمی صبر کنید."
+                    SpeechRecognizer.ERROR_SERVER -> "خطای سرور گوگل."
+                    SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "سکوت طولانی تشخیص داده شد."
+                    else -> "سرویس تشخیص گفتار فعال نشد."
+                }
+                statusText = "مکث ضبط ($message)"
+            }
+            override fun onResults(results: Bundle?) {
+                isListening = false
+                val matches = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    transcribedText = matches[0]
+                    statusText = "متن با موفقیت پیاده‌سازی شد ✅"
+                }
+            }
+            override fun onPartialResults(partialResults: Bundle?) {
+                val matches = partialResults?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                if (!matches.isNullOrEmpty()) {
+                    transcribedText = matches[0]
+                }
+            }
+            override fun onEvent(eventType: Int, params: Bundle?) {}
+        }
+    }
+
+    // Set listener
+    LaunchedEffect(speechRecognizer) {
+        speechRecognizer?.setRecognitionListener(speechListener)
+    }
+
+    val recordPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Start listening
+            val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
+                putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "fa-IR")
+                putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "fa-IR")
+                putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+            }
+            try {
+                speechRecognizer?.startListening(intent)
+                isListening = true
+            } catch (e: Exception) {
+                statusText = "خطا در راه‌اندازی ضبط: ${e.localizedMessage}"
+            }
+        } else {
+            statusText = "برای ضبط خاطرات باید دسترسی میکروفون را تأیید کنید. ⚠️"
+        }
+    }
+
+    fun toggleListening() {
+        if (isListening) {
+            try {
+                speechRecognizer?.stopListening()
+            } catch (e: Exception) {
+                // ignore
+            }
+            isListening = false
+        } else {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                context,
+                android.Manifest.permission.RECORD_AUDIO
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (hasPermission) {
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, "fa-IR")
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, "fa-IR")
+                    putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, "fa-IR")
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                }
+                try {
+                    speechRecognizer?.startListening(intent)
+                    isListening = true
+                } catch (e: Exception) {
+                    statusText = "خطا در راه‌اندازی ضبط: ${e.localizedMessage}"
+                }
+            } else {
+                recordPermissionLauncher.launch(android.Manifest.permission.RECORD_AUDIO)
+            }
+        }
+    }
+
+    Card(
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        shape = RoundedCornerShape(24.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp)
+            .testTag("voice_journal_card"),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "ثبت صوتی خاطرات و خلاصه هوش مصنوعی 🎙️✨",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = SageDeep
+                    ),
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Right
+                )
+            }
+
+            Text(
+                text = "کافیست با لمس دکمه زیر صحبت کنید. هوش مصنوعی آراما خاطرات صوتی شما را خلاصه‌سازی، تحلیل و به صورت ایمن ذخیره می‌کند.",
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    lineHeight = 22.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                textAlign = TextAlign.Right,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            // Dynamic microphone pulsating ring
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(100.dp)
+                    .padding(8.dp)
+            ) {
+                if (isListening) {
+                    // Pulsating ring based on audio level (rmsValue)
+                    val pulseScale by animateFloatAsState(
+                        targetValue = 1f + (rmsValue.coerceIn(0f, 10f) / 10f) * 0.4f,
+                        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow),
+                        label = "rms_pulse"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .scale(pulseScale)
+                            .background(SagePrimary.copy(alpha = 0.25f), CircleShape)
+                    )
+                }
+
+                IconButton(
+                    onClick = { toggleListening() },
+                    modifier = Modifier
+                        .size(68.dp)
+                        .background(if (isListening) CrisisRed else SagePrimary, CircleShape)
+                        .testTag("microphone_record_button")
+                ) {
+                    Icon(
+                        imageVector = if (isListening) Icons.Default.Stop else Icons.Default.Mic,
+                        contentDescription = if (isListening) "توقف ضبط" else "شروع ضبط صوتی",
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+            }
+
+            // Status and Time
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (isListening) {
+                    val formattedTime = String.format(Locale.US, "%02d:%02d", secondsElapsed / 60, secondsElapsed % 60)
+                    Text(
+                        text = formattedTime,
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = CrisisRed
+                        )
+                    )
+                } else {
+                    Spacer(modifier = Modifier.width(1.dp))
+                }
+
+                Text(
+                    text = statusText,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isListening) CrisisRed else SageDeep
+                    ),
+                    textAlign = TextAlign.Right
+                )
+            }
+
+            // Real-time or editable transcription text box
+            OutlinedTextField(
+                value = transcribedText,
+                onValueChange = { transcribedText = it },
+                label = { Text("متن گفتار پیاده‌سازی شده") },
+                placeholder = { Text("صحبت کنید تا متن شما اینجا نمایان شود یا خودتان خاطره را بنویسید...") },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(110.dp)
+                    .testTag("voice_journal_text_field"),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = SagePrimary,
+                    focusedLabelColor = SagePrimary
+                )
+            )
+
+            // Submit to Gemini Summarization Button
+            Button(
+                onClick = {
+                    if (transcribedText.isNotBlank()) {
+                        viewModel.summarizeAndSaveVoiceJournal(transcribedText, secondsElapsed)
+                        transcribedText = ""
+                        statusText = "خاطره با موفقیت برای خلاصه‌سازی به جمینای ارسال شد ✨"
+                    }
+                },
+                enabled = transcribedText.isNotBlank() && !isSummarizing,
+                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .testTag("summarize_journal_button")
+            ) {
+                if (isSummarizing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "در حال خلاصه‌سازی با هوش مصنوعی... 🧠",
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                } else {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = "خلاصه‌سازی جمینای",
+                            tint = Color.White,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            text = "تحلیل و خلاصه‌سازی با هوش مصنوعی جمینای",
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+            }
+
+            if (journalError != null) {
+                Text(
+                    text = journalError ?: "",
+                    style = MaterialTheme.typography.bodySmall.copy(color = CrisisRed),
+                    textAlign = TextAlign.Right,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+
+    // Historical list of voice journals
+    if (voiceJournals.isNotEmpty()) {
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Text(
+            text = "دفترچه خاطرات صوتی گذشته 📔✨",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.Bold,
+                color = SageDeep
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            textAlign = TextAlign.Right
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            voiceJournals.forEach { journal ->
+                val isExpanded = expandedEntryId == journal.id
+                val moodEmoji = when (journal.moodSuggestion) {
+                    "عالی" -> "😊"
+                    "خوب" -> "🙂"
+                    "معمولی" -> "😐"
+                    "خسته" -> "😔"
+                    "غمگین" -> "😢"
+                    "عصبانی" -> "😡"
+                    else -> "📝"
+                }
+
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("voice_journal_item_${journal.id}"),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(14.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        // Header of log card
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(text = moodEmoji, fontSize = 24.sp)
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Column {
+                                    val journalDate = SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(java.util.Date(journal.timestamp))
+                                    Text(
+                                        text = if (journal.recordedText.length > 25) journal.recordedText.take(25) + "..." else "خاطره صوتی جدید",
+                                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                                        textAlign = TextAlign.Right
+                                    )
+                                    Text(
+                                        text = "$journalDate • ضبط صوتی",
+                                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    )
+                                }
+                            }
+
+                            IconButton(
+                                onClick = { viewModel.deleteVoiceJournal(journal.id) },
+                                modifier = Modifier.testTag("delete_voice_journal_${journal.id}")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "حذف خاطره صوتی",
+                                    tint = MaterialTheme.colorScheme.error.copy(alpha = 0.8f)
+                                )
+                            }
+                        }
+
+                        // Summary Section
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(SageTintBg.copy(alpha = 0.25f), RoundedCornerShape(12.dp))
+                                .padding(12.dp)
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "تحلیل و خلاصه هوش مصنوعی 🧠✨",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = SageDeep
+                                        )
+                                    )
+                                    Text(
+                                        text = "وضعیت حسی: ${journal.moodSuggestion}",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            color = SagePrimary
+                                        )
+                                    )
+                                }
+                                Text(
+                                    text = journal.summary,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        lineHeight = 22.sp,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    ),
+                                    textAlign = TextAlign.Right,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+
+                        // Raw text collapsible
+                        Column {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        expandedEntryId = if (isExpanded) null else journal.id
+                                    }
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                                    contentDescription = "مشاهده متن کامل",
+                                    tint = SageDeep
+                                )
+                                Text(
+                                    text = "مشاهده گفتار خام پیاده‌سازی شده",
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = SageDeep
+                                    )
+                                )
+                            }
+
+                            AnimatedVisibility(visible = isExpanded) {
+                                Text(
+                                    text = journal.recordedText,
+                                    style = MaterialTheme.typography.bodySmall.copy(
+                                        lineHeight = 18.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    ),
+                                    textAlign = TextAlign.Right,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 8.dp)
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

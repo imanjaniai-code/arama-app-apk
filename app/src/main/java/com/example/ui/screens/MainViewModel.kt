@@ -149,6 +149,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val contentItems: StateFlow<List<com.example.data.database.ContentItemEntity>> = repository.allContentItems
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Voice Journals state
+    val allVoiceJournals: StateFlow<List<com.example.data.database.VoiceJournalEntity>> = repository.allVoiceJournals
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    private val _isSummarizingJournal = MutableStateFlow(false)
+    val isSummarizingJournal: StateFlow<Boolean> = _isSummarizingJournal.asStateFlow()
+
+    private val _journalError = MutableStateFlow<String?>(null)
+    val journalError: StateFlow<String?> = _journalError.asStateFlow()
+
     private val _selectedMoodEmoji = MutableStateFlow<String?>(null)
     val selectedMoodEmoji: StateFlow<String?> = _selectedMoodEmoji.asStateFlow()
 
@@ -460,22 +470,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("MainViewModel", "Failed to send OTP via server. Falling back to local offline simulation mode.", e)
+                android.util.Log.e("MainViewModel", "Failed to send OTP via server.", e)
                 withContext(Dispatchers.Main) {
                     _isTyping.value = false
-                    _isOtpSent.value = true
-                    _loginStep.value = LoginStep.OTP_INPUT
-                    _otpCountdown.value = 120
-                    _loginError.value = "اتصال به سرور تأیید هویت برقرار نشد. ورود در حالت آفلاین فعال شد (کد تأیید پیش‌فرض: ۱۲۳۴۵)."
-                    
-                    countdownJob?.cancel()
-                    countdownJob = viewModelScope.launch {
-                        while (_otpCountdown.value > 0) {
-                            kotlinx.coroutines.delay(1000)
-                            _otpCountdown.value -= 1
-                        }
-                    }
-                    logSecurityEvent("OTP_OFFLINE_FALLBACK", "ورود در حالت بدون سرور برای شماره $phone فعال شد.")
+                    _loginError.value = "عدم برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید."
                 }
             }
         }
@@ -493,21 +491,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         _loginError.value = null
         
         viewModelScope.launch(Dispatchers.IO) {
-            // Check offline bypass code first
-            if (otp == "12345" || otp == "۱۲۳۴۵") {
-                withContext(Dispatchers.Main) {
-                    _isTyping.value = false
-                    countdownJob?.cancel()
-                    
-                    val savedName = prefs.getString("user_name_$phone", "") ?: ""
-                    _userName.value = savedName
-                    
-                    _loginStep.value = LoginStep.PROFILE_SETUP
-                    logSecurityEvent("OTP_VERIFIED_OFFLINE", "تأیید آفلاین شماره $phone با موفقیت انجام شد.")
-                }
-                return@launch
-            }
-
             try {
                 val client = OkHttpClient()
                 val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -532,7 +515,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                             com.google.android.gms.tasks.Tasks.await(task)
                             android.util.Log.i("MainViewModel", "Firebase Authenticated securely with custom token for: $phone")
                         } else {
-                            android.util.Log.w("MainViewModel", "Custom token not provided by server. Operating in offline/local fallback mode.")
+                            android.util.Log.w("MainViewModel", "Custom token not provided by server. Operating in local mode.")
                         }
 
                         withContext(Dispatchers.Main) {
@@ -554,20 +537,10 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                     }
                 }
             } catch (e: Exception) {
-                android.util.Log.e("MainViewModel", "Failed to verify OTP via server, allowing bypass for testing", e)
+                android.util.Log.e("MainViewModel", "Failed to verify OTP via server.", e)
                 withContext(Dispatchers.Main) {
-                    // When offline, allow any 5-digit code or guide them to use 12345
-                    if (otp.length == 5) {
-                        _isTyping.value = false
-                        countdownJob?.cancel()
-                        val savedName = prefs.getString("user_name_$phone", "") ?: ""
-                        _userName.value = savedName
-                        _loginStep.value = LoginStep.PROFILE_SETUP
-                        logSecurityEvent("OTP_VERIFIED_OFFLINE_BYPASS", "تأیید آفلاین و دور زدن خطای سرور برای شماره $phone انجام شد.")
-                    } else {
-                        _isTyping.value = false
-                        _loginError.value = "خطا در برقراری ارتباط با سرور. لطفاً کد ۱۲۳۴۵ را برای ورود آفلاین وارد کنید."
-                    }
+                    _isTyping.value = false
+                    _loginError.value = "عدم برقراری ارتباط با سرور. لطفاً اتصال اینترنت خود را بررسی کنید."
                 }
             }
         }
@@ -876,6 +849,93 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             _selectedMoodLabel.value = null
             _moodNote.value = ""
             navigate("dashboard")
+        }
+    }
+
+    // --- Voice Journal AI Summarization and Saving ---
+    fun summarizeAndSaveVoiceJournal(text: String, durationSecs: Int) {
+        if (text.isBlank()) return
+        _isSummarizingJournal.value = true
+        _journalError.value = null
+        viewModelScope.launch {
+            try {
+                val systemInstruction = "You are a warm, clinical psychologist assistant."
+                val prompt = """
+                    تو یک دستیار هوشمند و روانشناس بالینی برای برنامه مراقبت روحی آراما (ARAMA) هستی.
+                    کاربر یک خاطره روزانه صوتی را ضبط کرده است. متن پیاده‌سازی شده آن به شرح زیر است:
+                    "$text"
+
+                    لطفاً این متن را به زبان فارسی روان، صمیمی، آرامش‌بخش و در قالب یک خلاصه صمیمانه کوتاه (حداکثر ۳ یا ۴ جمله) خلاصه کنی.
+                    همچنین یک عنوان بسیار خلاصه مناسب (۲ الی ۴ کلمه‌ای) برای این خاطره بنویس.
+                    و در نهایت، حس و حال کلی حاکم بر این خاطره را فقط با یکی از این گزینه‌ها مشخص کن: "عالی"، "خوب"، "معمولی"، "خسته"، "غمگین"، "عصبانی".
+
+                    خروجی خود را دقیقاً در قالب فرمت JSON زیر برگردان و هیچ نوشته اضافی خارج از این بلاک JSON ننویس:
+                    {
+                      "title": "عنوان کوتاه خاطره صوتی",
+                      "summary": "خلاصه صمیمانه و زیبای خاطره",
+                      "mood": "یکی از گزینه های فوق"
+                    }
+                """.trimIndent()
+
+                val response = GeminiApiClient.generateResponse(prompt = prompt, systemInstructionText = systemInstruction)
+                android.util.Log.d("MainViewModel", "Gemini response for voice journal: $response")
+
+                // Parse response safely
+                var title = "خاطره صوتی جدید"
+                var summary = text
+                var mood = "معمولی"
+
+                try {
+                    // Find JSON block in response
+                    val startIdx = response.indexOf("{")
+                    val endIdx = response.lastIndexOf("}")
+                    if (startIdx != -1 && endIdx != -1 && endIdx > startIdx) {
+                        val jsonStr = response.substring(startIdx, endIdx + 1)
+                        val moshi = Moshi.Builder().add(com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory()).build()
+                        val adapter = moshi.adapter(Map::class.java)
+                        val map = adapter.fromJson(jsonStr) as? Map<*, *>
+                        if (map != null) {
+                            title = map["title"] as? String ?: title
+                            summary = map["summary"] as? String ?: summary
+                            mood = map["mood"] as? String ?: mood
+                        }
+                    }
+                } catch (pe: Exception) {
+                    android.util.Log.e("MainViewModel", "Failed to parse JSON response, fallback to text", pe)
+                    summary = response
+                }
+
+                val journalEntity = com.example.data.database.VoiceJournalEntity(
+                    recordedText = text,
+                    summary = summary,
+                    moodSuggestion = mood,
+                    durationSeconds = durationSecs,
+                    timestamp = System.currentTimeMillis()
+                )
+                repository.insertVoiceJournal(journalEntity)
+                logSecurityEvent("VOICE_JOURNAL_SAVED", "کاربر خاطره صوتی به همراه خلاصه هوش مصنوعی را ذخیره کرد.")
+            } catch (e: Exception) {
+                android.util.Log.e("MainViewModel", "Error summarizing voice journal", e)
+                _journalError.value = "برقراری ارتباط با هوش مصنوعی برای خلاصه‌سازی خاطره با خطا مواجه شد."
+                // Fallback: save without AI summary if fails
+                val journalEntity = com.example.data.database.VoiceJournalEntity(
+                    recordedText = text,
+                    summary = "خلاصه در حالت آفلاین: $text",
+                    moodSuggestion = "معمولی",
+                    durationSeconds = durationSecs,
+                    timestamp = System.currentTimeMillis()
+                )
+                repository.insertVoiceJournal(journalEntity)
+            } finally {
+                _isSummarizingJournal.value = false
+            }
+        }
+    }
+
+    fun deleteVoiceJournal(id: Int) {
+        viewModelScope.launch {
+            repository.deleteVoiceJournalById(id)
+            logSecurityEvent("VOICE_JOURNAL_DELETED", "خاطره صوتی با شناسه $id حذف شد.")
         }
     }
 

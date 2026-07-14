@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 import net.sqlcipher.database.SupportFactory
 import net.sqlcipher.database.SQLiteDatabase
 
-@Database(entities = [MoodEntity::class, ChatEntity::class, SecurityLogEntity::class, SubscriptionEntity::class, ContentItemEntity::class], version = 4, exportSchema = false)
+@Database(entities = [MoodEntity::class, ChatEntity::class, SecurityLogEntity::class, SubscriptionEntity::class, ContentItemEntity::class, VoiceJournalEntity::class], version = 5, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun aramaDao(): AramaDao
 

@@ -82,17 +82,18 @@ app.post('/send-otp', async (req, res) => {
         if (MELIPAYAMAK_USERNAME && MELIPAYAMAK_PASSWORD && 
             MELIPAYAMAK_USERNAME !== 'MELIPAYAMAK_USERNAME_PLACEHOLDER') {
             try {
-                await axios.post('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
+                console.log(`Attempting to send real SMS to ${phone} via Melipayamak...`);
+                const smsRes = await axios.post('https://rest.payamak-panel.com/api/SendSMS/SendSMS', {
                     username: MELIPAYAMAK_USERNAME,
                     password: MELIPAYAMAK_PASSWORD,
                     to: phone,
                     from: '5000400196',
-                    text: `کد تأیید آراما: ${otp}`,
+                    text: `کد تأیید ورود شما به آراما: ${otp}`,
                     isFlash: false
                 });
-                console.log(`Melipayamak SMS sent successfully to ${phone}`);
+                console.log(`Melipayamak SMS API response:`, smsRes.data);
             } catch (smsError) {
-                console.error(`Failed to send SMS via Melipayamak: ${smsError.message}`);
+                console.error(`Failed to send SMS via Melipayamak:`, smsError.response ? smsError.response.data : smsError.message);
             }
         } else {
             console.warn(`Melipayamak credentials not set. Falling back to console-only OTP delivery.`);
