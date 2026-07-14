@@ -592,50 +592,16 @@ fun SettingsScreen(
                                         Text("طرح فعال شما 🌱", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold))
                                     }
                                 } else if (isPaid) {
-                                    var isThisPlanInitiating by remember { mutableStateOf(false) }
-                                    
                                     Button(
                                         onClick = {
-                                            if (!isInitiatingPayment && !isVerifyingPayment) {
-                                                coroutineScope.launch {
-                                                    isInitiatingPayment = true
-                                                    isThisPlanInitiating = true
-                                                    initiationError = null
-                                                    val result = com.example.data.api.AramaPaymentClient.requestPayment(
-                                                        amount = planItem.priceTomans,
-                                                        description = "خرید اشتراک ${planItem.persianName} آراما",
-                                                        plan = planItem.id
-                                                    )
-                                                    isInitiatingPayment = false
-                                                    isThisPlanInitiating = false
-                                                    if (result.isSuccess) {
-                                                        val payRes = result.getOrNull()
-                                                        if (payRes != null) {
-                                                            try {
-                                                                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(payRes.paymentUrl))
-                                                                context.startActivity(browserIntent)
-                                                            } catch (e: Exception) {
-                                                                initiationError = "خطا در باز کردن درگاه پرداخت: ${e.localizedMessage}"
-                                                            }
-                                                        } else {
-                                                            initiationError = "پاسخ نامعتبر از سرور پرداخت."
-                                                        }
-                                                    } else {
-                                                        initiationError = result.exceptionOrNull()?.localizedMessage ?: "خطا در اتصال به درگاه پرداخت."
-                                                    }
-                                                }
-                                            }
+                                            selectedUpgradePlan = planItem.id
+                                            showPaymentDialog = true
                                         },
-                                        enabled = !isInitiatingPayment && !isVerifyingPayment,
                                         colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
                                         shape = RoundedCornerShape(10.dp),
                                         modifier = Modifier.fillMaxWidth().height(40.dp)
                                     ) {
-                                        if (isThisPlanInitiating) {
-                                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
-                                        } else {
-                                            Text("ارتقا به این طرح 🚀", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Color.White))
-                                        }
+                                        Text("ارتقا به این طرح 🚀", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold, color = Color.White))
                                     }
                                 }
                             }
@@ -1375,66 +1341,17 @@ fun SettingsScreen(
 
     // --- Simulated ZarinPal Checkout Gateway ---
     if (showPaymentDialog) {
-        AlertDialog(
-            onDismissRequest = { showPaymentDialog = false },
-            title = {
-                Text(
-                    text = "درگاه پرداخت امن آراما (شبیه‌ساز زرین‌پال)",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold, color = SageDeep),
-                    textAlign = TextAlign.Start,
-                    modifier = Modifier.fillMaxWidth()
-                )
+        val resolvedPlan = com.example.data.model.SubscriptionPlans.fromId(selectedUpgradePlan)
+        ZarinpalPaymentDialog(
+            planItem = resolvedPlan,
+            onDismiss = { 
+                showPaymentDialog = false 
+                viewModel.logSecurityEvent("PAYMENT_CANCELLED", "تراکنش خرید اشتراک $selectedUpgradePlan لغو شد.")
             },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(
-                        text = "شما در حال ارتقای حساب خود به پلن طلایی (Premium) هستید.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = "مبلغ قابل پرداخت: ۴۹,۰۰۰ تومان",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold),
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = "شماره کارت شبیه‌سازی شده: ۶۰۳۷-۹۹۷۵-۱۲۳۴-۵۶۷۸",
-                        style = MaterialTheme.typography.bodySmall,
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Text(
-                        text = "سرویس‌دهنده واسط: شرکت پرداخت الکترونیک زرین‌پال",
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.Gray),
-                        textAlign = TextAlign.Start,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showPaymentDialog = false
-                        viewModel.upgradeSubscription(selectedUpgradePlan)
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
-                ) {
-                    Text("پرداخت موفقیت‌آمیز (شبیه‌سازی)", color = Color.White)
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = {
-                        showPaymentDialog = false
-                        viewModel.logSecurityEvent("PAYMENT_CANCELLED", "تراکنش خرید اشتراک طلایی لغو شد.")
-                    }
-                ) {
-                    Text("انصراف و بازگشت", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                }
-            },
-            shape = RoundedCornerShape(20.dp)
+            onPaymentSuccess = { refId ->
+                showPaymentDialog = false
+                viewModel.upgradeSubscription(selectedUpgradePlan, transactionId = refId)
+            }
         )
     }
 

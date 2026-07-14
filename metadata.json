@@ -1,5 +1,5 @@
 {
-  "name": "آراما (Arama)",
+  "name": "آراما",
   "description": "یک دستیار هوشمند همراه سلامت روان به زبان فارسی با چیدمان RTL و مجهز به هوش مصنوعی جمینای",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
