@@ -476,11 +476,11 @@ fun SettingsScreen(
                         }
                     }
 
-                    if (discountMessage != null) {
+                    discountMessage?.let { msg ->
                         Text(
-                            text = discountMessage!!,
+                            text = msg,
                             style = MaterialTheme.typography.bodySmall.copy(
-                                color = if (discountMessage!!.contains("موفقیت")) SageDeep else CrisisRed,
+                                color = if (msg.contains("موفقیت")) SageDeep else CrisisRed,
                                 fontWeight = FontWeight.Bold
                             ),
                             textAlign = TextAlign.Start,
@@ -1050,11 +1050,11 @@ fun SettingsScreen(
                     Text("بازیابی نسخه پشتیبان (Import)")
                 }
 
-                if (showBackupSuccess != null) {
+                showBackupSuccess?.let { msg ->
                     Text(
-                        text = showBackupSuccess!!,
+                        text = msg,
                         style = MaterialTheme.typography.bodySmall.copy(
-                            color = if (showBackupSuccess!!.contains("موفقیت")) SageDeep else CrisisRed,
+                            color = if (msg.contains("موفقیت")) SageDeep else CrisisRed,
                             fontWeight = FontWeight.Bold
                         ),
                         textAlign = TextAlign.Start,
@@ -1403,7 +1403,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = paymentSuccessMsg!!,
+                    text = paymentSuccessMsg ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
@@ -1435,7 +1435,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = paymentErrorMsg!!,
+                    text = paymentErrorMsg ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()
@@ -1467,7 +1467,7 @@ fun SettingsScreen(
             },
             text = {
                 Text(
-                    text = initiationError!!,
+                    text = initiationError ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Start,
                     modifier = Modifier.fillMaxWidth()

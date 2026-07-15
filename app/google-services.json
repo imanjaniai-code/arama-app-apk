@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "562391278704",
+    "project_id": "arama-902c2",
+    "storage_bucket": "arama-902c2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:562391278704:android:595ffb87bd0ddb407b80b5",
+        "android_client_info": {
+          "package_name": "com.aistudio.arama.vchszl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD1rrD3EZRaS2B3iXREuM-9T-hELPj_6po"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

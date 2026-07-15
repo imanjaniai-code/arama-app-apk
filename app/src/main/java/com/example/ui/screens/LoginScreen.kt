@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,6 +43,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +82,7 @@ fun LoginScreen(
     val generatedOtp by viewModel.generatedOtp.collectAsState()
     val loginError by viewModel.loginError.collectAsState()
     val isTyping by viewModel.isTyping.collectAsState()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     // Local profile setup states
     var nameInput by remember { mutableStateOf("") }
@@ -85,6 +90,18 @@ fun LoginScreen(
     var confirmPinInput by remember { mutableStateOf("") }
     var isPinVisible by remember { mutableStateOf(false) }
     var localError by remember { mutableStateOf<String?>(null) }
+
+    var showMeliConfigDialog by remember { mutableStateOf(false) }
+    
+    val savedUser by viewModel.customMelipayamakUsername.collectAsState()
+    val savedPass by viewModel.customMelipayamakPassword.collectAsState()
+    val savedFrom by viewModel.customMelipayamakFrom.collectAsState()
+    val testSmsResult by viewModel.testSmsResult.collectAsState()
+
+    var inputUser by remember(savedUser) { mutableStateOf(savedUser) }
+    var inputPass by remember(savedPass) { mutableStateOf(savedPass) }
+    var inputFrom by remember(savedFrom) { mutableStateOf(savedFrom) }
+    var testPhoneInput by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier
@@ -201,10 +218,10 @@ fun LoginScreen(
                             shape = RoundedCornerShape(16.dp)
                         )
 
-                        if (loginError != null) {
+                        loginError?.let { err ->
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = loginError!!,
+                                text = err,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.error,
                                     fontWeight = FontWeight.SemiBold
@@ -241,6 +258,100 @@ fun LoginScreen(
                                     text = "ارسال کد تأیید",
                                     style = MaterialTheme.typography.labelLarge.copy(
                                         fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        OutlinedButton(
+                            onClick = { viewModel.signInWithGoogle(context) },
+                            enabled = !isTyping,
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp)
+                                .testTag("google_signin_button"),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = SagePrimary
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SagePrimary)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "ورود با گوگل",
+                                    tint = SagePrimary,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "ورود با حساب گوگل (Google)",
+                                    style = MaterialTheme.typography.labelLarge.copy(
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        HorizontalDivider(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(16.dp))
+
+                        TextButton(
+                            onClick = { viewModel.startBypassOtpFlow() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("quick_bypass_button")
+                        ) {
+                            Text(
+                                text = "ورود سریع آزمایشی (بدون نیاز به پیامک) 🔑",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    color = SagePrimary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        TextButton(
+                            onClick = { 
+                                viewModel.clearTestSmsResult()
+                                showMeliConfigDialog = true 
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(48.dp)
+                                .testTag("meli_config_button")
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Settings,
+                                    contentDescription = "تنظیمات فرستنده پیامک",
+                                    tint = SagePrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "تنظیمات پنل ملی‌پیامک شما 🛠️",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = SagePrimary,
                                         fontWeight = FontWeight.Bold
                                     )
                                 )
@@ -328,10 +439,10 @@ fun LoginScreen(
 
 
 
-                        if (loginError != null) {
+                        loginError?.let { err ->
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = loginError!!,
+                                text = err,
                                 style = MaterialTheme.typography.bodyMedium.copy(
                                     color = MaterialTheme.colorScheme.error,
                                     fontWeight = FontWeight.SemiBold
@@ -678,6 +789,214 @@ fun LoginScreen(
                 }
             }
         }
+    }
+
+    if (showMeliConfigDialog) {
+        var isTestPhoneTyping by remember { mutableStateOf(false) }
+        var isDialogPinVisible by remember { mutableStateOf(false) }
+
+        AlertDialog(
+            onDismissRequest = { showMeliConfigDialog = false },
+            title = {
+                Text(
+                    text = "تنظیمات اختصاصی پنل ملی‌پیامک 🛠️",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                    textAlign = TextAlign.Right,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "جهت ارسال واقعی کد تأیید، می‌توانید مشخصات پنل ملی‌پیامک خود را در زیر وارد کنید. در صورت خالی گذاشتن، از پنل پیش‌فرض استفاده می‌شود.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Justify,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = inputUser,
+                        onValueChange = { inputUser = it },
+                        label = { Text("نام کاربری ملی‌پیامک") },
+                        placeholder = { Text("شماره تماس یا نام کاربری") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = inputPass,
+                        onValueChange = { inputPass = it },
+                        label = { Text("کلمه عبور ملی‌پیامک") },
+                        placeholder = { Text("کلمه عبور پنل") },
+                        singleLine = true,
+                        trailingIcon = {
+                            IconButton(onClick = { isDialogPinVisible = !isDialogPinVisible }) {
+                                Icon(
+                                    imageVector = if (isDialogPinVisible) androidx.compose.material.icons.Icons.Default.VisibilityOff else androidx.compose.material.icons.Icons.Default.Visibility,
+                                    contentDescription = "نمایش رمز"
+                                )
+                            }
+                        },
+                        visualTransformation = if (isDialogPinVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        )
+                    )
+
+                    OutlinedTextField(
+                        value = inputFrom,
+                        onValueChange = { inputFrom = it },
+                        label = { Text("شماره فرستنده (Sender Line)") },
+                        placeholder = { Text("مثال: 5000400196 یا خط اختصاصی") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                viewModel.updateMelipayamakConfig(inputUser, inputPass, inputFrom)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
+                        ) {
+                            Text("ذخیره تنظیمات", color = Color.White)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                inputUser = ""
+                                inputPass = ""
+                                inputFrom = ""
+                                viewModel.updateMelipayamakConfig("", "", "")
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SagePrimary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SagePrimary)
+                        ) {
+                            Text("ریست به پیش‌فرض")
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f), modifier = Modifier.padding(vertical = 4.dp))
+
+                    Text(
+                        text = "🧪 تست ارسال پیامک (اختیاری):",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = SageDeep),
+                        textAlign = TextAlign.Right,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    OutlinedTextField(
+                        value = testPhoneInput,
+                        onValueChange = { testPhoneInput = it },
+                        label = { Text("شماره موبایل جهت تست") },
+                        placeholder = { Text("مثال: 09123456789") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = SagePrimary,
+                            focusedLabelColor = SagePrimary
+                        )
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                isTestPhoneTyping = true
+                                viewModel.sendTestSms(testPhoneInput, inputUser, inputPass, inputFrom)
+                            },
+                            enabled = testPhoneInput.isNotEmpty(),
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary)
+                        ) {
+                            Text("ارسال پیامک تست 🚀", color = Color.White)
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.runDiagnosticConnectionTest(inputUser, inputPass, inputFrom)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = SagePrimary),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, SagePrimary)
+                        ) {
+                            Text("تست عیب‌یابی اتصال 🔍")
+                        }
+                    }
+
+                    testSmsResult?.let { result ->
+                        val isReport = result.startsWith("--- گزارش")
+                        val isSuccess = result.startsWith("موفقیت") || result.contains("تبریک!")
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 240.dp)
+                                .background(
+                                    color = if (isSuccess) SagePrimary.copy(alpha = 0.1f) else Color(0xFFFFEBEE),
+                                    shape = RoundedCornerShape(8.dp)
+                                )
+                                .padding(12.dp)
+                        ) {
+                            if (isReport) {
+                                androidx.compose.foundation.lazy.LazyColumn(
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    item {
+                                        Text(
+                                            text = result,
+                                            style = MaterialTheme.typography.bodySmall.copy(
+                                                color = if (result.contains("❌") || result.contains("⚠️")) Color(0xFFC62828) else SageDeep,
+                                                fontWeight = FontWeight.Bold
+                                            ),
+                                            textAlign = TextAlign.Right,
+                                            modifier = Modifier.fillMaxWidth()
+                                        )
+                                    }
+                                }
+                            } else {
+                                Text(
+                                    text = result,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        color = if (isSuccess) SageDeep else Color(0xFFC62828),
+                                        fontWeight = FontWeight.Bold
+                                    ),
+                                    textAlign = TextAlign.Right,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showMeliConfigDialog = false }) {
+                    Text("بستن و اعمال نهایی", color = SagePrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
     }
 }
 
