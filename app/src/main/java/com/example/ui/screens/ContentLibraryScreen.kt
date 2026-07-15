@@ -253,21 +253,7 @@ fun ContentLibraryScreen(
                                 )
 
                                 // If they have data, show a quick re-generate sample button for evaluation
-                                if (moods.isNotEmpty()) {
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    TextButton(
-                                        onClick = { viewModel.generateSampleWeeklyData() },
-                                        modifier = Modifier.testTag("regenerate_demo_data_button")
-                                    ) {
-                                        Text(
-                                            text = "🔄 بازسازی نمونه ۷ روز گذشته (برای ارزیابی)",
-                                            style = MaterialTheme.typography.bodySmall.copy(
-                                                fontWeight = FontWeight.Bold,
-                                                color = SagePrimary
-                                            )
-                                        )
-                                    }
-                                }
+
                             }
                         }
 
@@ -437,13 +423,13 @@ fun ContentLibraryScreen(
                                         )
                                         
                                         Button(
-                                            onClick = { viewModel.generateSampleWeeklyData() },
+                                            onClick = { viewModel.navigate("mood") },
                                             colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
                                             shape = RoundedCornerShape(12.dp),
-                                            modifier = Modifier.fillMaxWidth().testTag("generate_sample_button")
+                                            modifier = Modifier.fillMaxWidth().testTag("navigate_to_mood_button")
                                         ) {
                                             Text(
-                                                text = "شبیه‌سازی داده‌های آزمایشی ۷ روز گذشته 📊",
+                                                text = "اولین ثبت حال روحی 🌱",
                                                 style = MaterialTheme.typography.labelLarge.copy(
                                                     fontWeight = FontWeight.Bold,
                                                     color = Color.White

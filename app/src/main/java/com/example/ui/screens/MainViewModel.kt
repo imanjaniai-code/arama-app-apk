@@ -242,7 +242,26 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         // Safe manual Firebase initialization in case google-services.json is missing or incomplete
         try {
             if (com.google.firebase.FirebaseApp.getApps(application).isEmpty()) {
-                if (com.arama.app.BuildConfig.DEBUG) {
+                val customApiKey = try { com.arama.app.BuildConfig.FIREBASE_API_KEY } catch (e: Throwable) { "" }
+                val customAppId = try { com.arama.app.BuildConfig.FIREBASE_APPLICATION_ID } catch (e: Throwable) { "" }
+                val customProjectId = try { com.arama.app.BuildConfig.FIREBASE_PROJECT_ID } catch (e: Throwable) { "" }
+
+                val useRealFirebase = !customApiKey.isNullOrBlank() && 
+                                     !customApiKey.contains("PLACEHOLDER") && 
+                                     !customAppId.isNullOrBlank() && 
+                                     !customAppId.contains("PLACEHOLDER") && 
+                                     !customProjectId.isNullOrBlank() && 
+                                     !customProjectId.contains("PLACEHOLDER")
+
+                if (useRealFirebase) {
+                    android.util.Log.i("MainViewModel", "Initializing Firebase dynamically using configured credentials from Secrets...")
+                    val options = com.google.firebase.FirebaseOptions.Builder()
+                        .setApplicationId(customAppId)
+                        .setApiKey(customApiKey)
+                        .setProjectId(customProjectId)
+                        .build()
+                    com.google.firebase.FirebaseApp.initializeApp(application, options)
+                } else if (com.arama.app.BuildConfig.DEBUG) {
                     val options = com.google.firebase.FirebaseOptions.Builder()
                         .setApplicationId("1:1234567890:android:1234567890")
                         .setApiKey("mock-api-key-for-offline-mode")
@@ -1588,7 +1607,28 @@ class SafeSharedPreferences(
 
     init {
         activePrefs = try {
-            initPrimary()
+            var result: SharedPreferences? = null
+            var error: Throwable? = null
+            val t = Thread {
+                try {
+                    result = initPrimary()
+                } catch (ex: Throwable) {
+                    error = ex
+                }
+            }
+            t.start()
+            t.join(600) // wait at most 600 milliseconds for Keystore/EncryptedSharedPreferences
+            if (t.isAlive) {
+                android.util.Log.e("SafeSharedPreferences", "EncryptedSharedPreferences initialization timed out! Keystore might be blocked. Falling back to plain SharedPreferences.")
+                t.interrupt() // try to interrupt
+                context.getSharedPreferences("arama_prefs_fallback", Context.MODE_PRIVATE)
+            } else {
+                val err = error
+                if (err != null) {
+                    throw err
+                }
+                result ?: context.getSharedPreferences("arama_prefs_fallback", Context.MODE_PRIVATE)
+            }
         } catch (t: Throwable) {
             android.util.Log.e("SafeSharedPreferences", "Failed to initialize primary prefs, falling back", t)
             context.getSharedPreferences("arama_prefs_fallback", Context.MODE_PRIVATE)

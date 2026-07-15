@@ -1253,7 +1253,7 @@ fun SettingsScreen(
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = "آراما — نسخه آزمایشی تلفن همراه (v1.0.0)",
+                text = "آراما — نسخه رسمی تلفن همراه (v1.0.0)",
                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant),
                 textAlign = TextAlign.Center
             )

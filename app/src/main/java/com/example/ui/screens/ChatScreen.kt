@@ -335,26 +335,13 @@ fun ChatScreen(
                             textAlign = TextAlign.Center,
                             modifier = Modifier.fillMaxWidth()
                         )
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        Button(
+                            onClick = { viewModel.navigate("settings") },
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Button(
-                                onClick = { viewModel.navigate("settings") },
-                                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("ارتقای آنی اشتراک 🌟", color = Color.White)
-                            }
-                            Button(
-                                onClick = { viewModel.resetDailyLimitsSimulated() },
-                                colors = ButtonDefaults.buttonColors(containerColor = SageDeep),
-                                shape = RoundedCornerShape(10.dp),
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Text("ریست آزمایشی حد مجاز", color = Color.White)
-                            }
+                            Text("ارتقای آنی اشتراک 🌟", color = Color.White)
                         }
                     }
                 }

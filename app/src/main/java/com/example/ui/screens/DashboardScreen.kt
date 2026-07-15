@@ -180,36 +180,16 @@ fun DashboardScreen(
                             textAlign = TextAlign.Center
                         )
                         
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        Button(
+                            onClick = { viewModel.navigate("mood") },
+                            colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
                         ) {
-                            Button(
-                                onClick = { viewModel.navigate("mood") },
-                                colors = ButtonDefaults.buttonColors(containerColor = SagePrimary),
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                Text(
-                                    text = "اولین ثبت حال روحی 🌱",
-                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
-                                )
-                            }
-                            
-                            OutlinedButton(
-                                onClick = { viewModel.generateSampleWeeklyData() },
-                                shape = RoundedCornerShape(12.dp),
-                                modifier = Modifier.fillMaxWidth().testTag("generate_sample_button")
-                            ) {
-                                Text(
-                                    text = "شبیه‌سازی داده‌های آزمایشی ۷ روز گذشته 📊",
-                                    style = MaterialTheme.typography.labelLarge.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = SagePrimary
-                                    )
-                                )
-                            }
+                            Text(
+                                text = "اولین ثبت حال روحی 🌱",
+                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold)
+                            )
                         }
                     }
                 }
